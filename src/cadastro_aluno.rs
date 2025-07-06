@@ -7,6 +7,7 @@ pub struct DadosParaCadastro {
     pub dre: String,
     pub emissao: DateTime<Local>,
     pub codigo: String,
+
     pub email_externo: Email,
     // TODO: serde para telefones
     pub telefone: String,
