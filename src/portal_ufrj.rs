@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use chrono::{DateTime, Local};
 use thiserror::Error;
-use reqwest::blocking::ClientBuilder;
+use reqwest::ClientBuilder;
 use select::document::Document;
 use select::predicate::{Attr, Class};
 
@@ -35,7 +35,7 @@ pub enum Consulta {
     Desconhecido,
 }
 
-pub fn consulta(dre: &str, emissao: DateTime<Local>, codigo: &str)
+pub async fn consulta(dre: &str, emissao: DateTime<Local>, codigo: &str)
     -> Result<Consulta, ConsultaErro>
 {
     let client = ClientBuilder::new()
@@ -44,9 +44,12 @@ pub fn consulta(dre: &str, emissao: DateTime<Local>, codigo: &str)
 
     let res_form = client
         .get(GET_URL)
-        .send()?;
+        .send()
+        .await?
+        .text()
+        .await?;
 
-    let form_doc = Document::from(res_form.text()?.as_str());
+    let form_doc = Document::from(res_form.as_str());
     let view_state = form_doc
         .find(Attr("name", "javax.faces.ViewState"))
         .next()
@@ -76,9 +79,12 @@ pub fn consulta(dre: &str, emissao: DateTime<Local>, codigo: &str)
     let res = client
         .post(POST_URL)
         .form(&form)
-        .send()?;
+        .send()
+        .await?
+        .text()
+        .await?;
 
-    let res_doc = Document::from(res.text()?.as_str());
+    let res_doc = Document::from(res.as_str());
 
     let valido = res_doc
         .find(Attr("id", "msgDocumentoValido"))
