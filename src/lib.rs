@@ -1,5 +1,4 @@
 
-pub fn ola_mundo() -> String {
-    "Instituto de Computação / UFRJ".to_string()
-}
+pub mod cadastro_aluno;
+pub mod portal_ufrj;
 
