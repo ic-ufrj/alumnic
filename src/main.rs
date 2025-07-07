@@ -1,5 +1,5 @@
-use std::error::Error;
 use clap::{Parser, Subcommand};
+use std::error::Error;
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -19,18 +19,21 @@ enum Comandos {
     Registro {
         dre: String,
         username: String,
-    }
+    },
 }
-
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let cli = Cli::parse();
 
     match &cli.comando {
-        Comandos::Matricula { dre, data, hora, codigo } => {
-            let r = alumnic::portal_ufrj::consulta(dre, data, hora, codigo)
-                .await?;
+        Comandos::Matricula {
+            dre,
+            data,
+            hora,
+            codigo,
+        } => {
+            let r = alumnic::portal_ufrj::consulta(dre, data, hora, codigo).await?;
             println!("{r:?}");
         }
         Comandos::Registro { dre, username } => {
@@ -41,4 +44,3 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     Ok(())
 }
-

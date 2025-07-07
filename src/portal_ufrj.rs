@@ -1,9 +1,9 @@
-use std::collections::HashMap;
 use chrono::Local;
-use thiserror::Error;
 use reqwest::ClientBuilder;
 use select::document::Document;
 use select::predicate::{Attr, Class};
+use std::collections::HashMap;
+use thiserror::Error;
 
 const GET_URL: &str = "https://gnosys.ufrj.br/Documentos/autenticacao/regularmenteMatriculado";
 const POST_URL: &str = "https://gnosys.ufrj.br/Documentos/autenticacao.seam";
@@ -25,29 +25,20 @@ pub enum ConsultaErro {
 
 #[derive(Debug)]
 pub enum Consulta {
-    AlunoDoCurso {
-        nome: String,
-    },
-    AlunoOutroCurso {
-        nome: String,
-        curso: String,
-    },
+    AlunoDoCurso { nome: String },
+    AlunoOutroCurso { nome: String, curso: String },
     Desconhecido,
 }
 
-pub async fn consulta(dre: &str, data: &str, hora: &str, codigo: &str)
-    -> Result<Consulta, ConsultaErro>
-{
-    let client = ClientBuilder::new()
-        .cookie_store(true)
-        .build()?;
+pub async fn consulta(
+    dre: &str,
+    data: &str,
+    hora: &str,
+    codigo: &str,
+) -> Result<Consulta, ConsultaErro> {
+    let client = ClientBuilder::new().cookie_store(true).build()?;
 
-    let res_form = client
-        .get(GET_URL)
-        .send()
-        .await?
-        .text()
-        .await?;
+    let res_form = client.get(GET_URL).send().await?.text().await?;
 
     let form_doc = Document::from(res_form.as_str());
     let view_state = form_doc
@@ -122,9 +113,3 @@ pub async fn consulta(dre: &str, data: &str, hora: &str, codigo: &str)
         })
     }
 }
-
-
-
-
-
-

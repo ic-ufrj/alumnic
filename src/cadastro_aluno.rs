@@ -1,6 +1,6 @@
 use chrono::{DateTime, Local};
-use serde_email::Email;
 use serde::{Deserialize, Serialize};
+use serde_email::Email;
 
 #[derive(Serialize, Deserialize)]
 pub struct DadosParaCadastro {
@@ -13,5 +13,3 @@ pub struct DadosParaCadastro {
     pub telefone: String,
     pub senha: String,
 }
-
-
