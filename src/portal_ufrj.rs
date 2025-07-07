@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use chrono::{DateTime, Local};
+use chrono::Local;
 use thiserror::Error;
 use reqwest::ClientBuilder;
 use select::document::Document;
@@ -35,7 +35,7 @@ pub enum Consulta {
     Desconhecido,
 }
 
-pub async fn consulta(dre: &str, emissao: DateTime<Local>, codigo: &str)
+pub async fn consulta(dre: &str, data: &str, hora: &str, codigo: &str)
     -> Result<Consulta, ConsultaErro>
 {
     let client = ClientBuilder::new()
@@ -57,8 +57,6 @@ pub async fn consulta(dre: &str, emissao: DateTime<Local>, codigo: &str)
         .ok_or(ConsultaErro::SemViewState)?
         .to_string();
 
-    let data_emissao = emissao.format("%d/%m/%Y").to_string();
-    let hora_emissao = emissao.format("%H:%M").to_string();
     let mes_hoje = Local::now().format("%m/%Y").to_string();
 
     let mut form = HashMap::new();
@@ -66,9 +64,9 @@ pub async fn consulta(dre: &str, emissao: DateTime<Local>, codigo: &str)
     form.insert("gnosys-filtro_link_hidden_", "gnosys-filtro-campos");
     form.insert("alunoMatricula", dre);
     form.insert("situacaoMatricula", "A");
-    form.insert("dataAutenticacaoInputDate", &data_emissao);
+    form.insert("dataAutenticacaoInputDate", &data);
     form.insert("dataAutenticacaoCurrentDate", &mes_hoje);
-    form.insert("hora", &hora_emissao);
+    form.insert("hora", &hora);
     form.insert("assinatura", codigo);
     form.insert("gnosys-filtro", "gnosys-filtro");
     form.insert("autoScroll", "");
