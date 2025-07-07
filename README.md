@@ -4,7 +4,7 @@ Para testar em seu computador, crie um túnel SSH para a porta do LDAP:
 
 Agora, no terminal em que for executar o programa:
 
-    export LDAP_URL='localhost:9090'
+    export LDAP_URL='ldap://localhost:9090'
     export LDAP_BIND_DN='cn=admin,dc=dcc,dc=ufrj,dc=br'
     export LDAP_BIND_PW='SENHA_DO_LDAP'
 
