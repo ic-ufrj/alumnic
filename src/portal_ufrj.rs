@@ -55,9 +55,9 @@ pub async fn consulta(
     form.insert("gnosys-filtro_link_hidden_", "gnosys-filtro-campos");
     form.insert("alunoMatricula", dre);
     form.insert("situacaoMatricula", "A");
-    form.insert("dataAutenticacaoInputDate", &data);
+    form.insert("dataAutenticacaoInputDate", data);
     form.insert("dataAutenticacaoCurrentDate", &mes_hoje);
-    form.insert("hora", &hora);
+    form.insert("hora", hora);
     form.insert("assinatura", codigo);
     form.insert("gnosys-filtro", "gnosys-filtro");
     form.insert("autoScroll", "");
@@ -85,7 +85,7 @@ pub async fn consulta(
         .next()
         .is_some();
 
-    if valido != !invalido {
+    if valido == invalido {
         return Err(ConsultaErro::CombinacaoInvalida);
     }
 
