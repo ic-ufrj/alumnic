@@ -89,3 +89,26 @@ impl FromStr for Nome {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn testar_usernames() {
+        assert_eq!(
+            Nome::from_str("JOÃO CARLOS PEREIRA DA SILVA").unwrap()
+                .usernames().collect::<Vec<String>>(),
+            vec![
+                "joaocps",
+                "joaocpsilva",
+                "joaocpereiras",
+                "joaocpereirasilva",
+                "joaocarlosps",
+                "joaocarlospsilva",
+                "joaocarlospereiras",
+                "joaocarlospereirasilva",
+            ],
+        )
+    }
+}
