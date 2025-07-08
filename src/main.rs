@@ -18,7 +18,7 @@ enum Comandos {
     },
     Registro {
         dre: String,
-        username: String,
+        nome: String,
     },
 }
 
@@ -33,13 +33,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
             hora,
             codigo,
         } => {
-            let r = alumnic::portal_ufrj::consulta(dre, data, hora, codigo).await?;
+            let r =
+                alumnic::portal_ufrj::consulta(dre, data, hora, codigo).await?;
             println!("{r:?}");
-        }
-        Comandos::Registro { dre, username } => {
-            let r = alumnic::ldap::achar_usuario(dre, username).await?;
+        },
+        Comandos::Registro { dre, nome } => {
+            let r = alumnic::ldap::cadastro_ldap(dre, nome).await?;
             println!("{r:?}");
-        }
+        },
     }
 
     Ok(())

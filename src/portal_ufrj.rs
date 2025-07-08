@@ -5,7 +5,8 @@ use select::predicate::{Attr, Class};
 use std::collections::HashMap;
 use thiserror::Error;
 
-const GET_URL: &str = "https://gnosys.ufrj.br/Documentos/autenticacao/regularmenteMatriculado";
+const GET_URL: &str =
+    "https://gnosys.ufrj.br/Documentos/autenticacao/regularmenteMatriculado";
 const POST_URL: &str = "https://gnosys.ufrj.br/Documentos/autenticacao.seam";
 
 #[derive(Debug, Error)]
@@ -19,7 +20,9 @@ pub enum ConsultaErro {
     #[error("o retorno do gnosys está estranho, não é válido nem inválido")]
     CombinacaoInvalida,
 
-    #[error("número estranho de itens na resposta, pode ser uma mudança do gnosys")]
+    #[error(
+        "número estranho de itens na resposta, pode ser uma mudança do gnosys"
+    )]
     NumeroEstranhoDeItens,
 }
 

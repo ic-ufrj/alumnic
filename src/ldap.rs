@@ -1,42 +1,62 @@
-use ldap3::{LdapConnAsync, LdapError, Scope, SearchEntry, ldap_escape};
+use crate::utils::nome::{Nome, NomeErro};
+use ldap3::{Ldap, LdapConnAsync, LdapError, Scope, SearchEntry, ldap_escape};
+use std::str::FromStr;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
-pub enum ConsultaLdapErro {
+pub enum CadastroErro {
     #[error("Houve um problema com o ldap3")]
     ErroLdap(#[from] LdapError),
 
     #[error("Houve um erro ao encontrar o uid do DRE que já está registrado")]
     FalhaUid,
+
+    #[error("Não foi possível encontrar um nome de usuário válido")]
+    UsuarioDificil,
+
+    #[error("Houve um erro ao processar o nome")]
+    ErroDeNome(#[from] NomeErro),
 }
 
 #[derive(Debug)]
-pub enum ConsultaLdap {
-    /// O DRE já está cadastrado, ou seja, o usuário já possui uma conta. Nesse
-    /// caso, é retornado o username da conta.
-    Registrado(String),
-    /// O DRE não está cadastrado, mas o username está sendo usado por algum
-    /// outro aluno, professor, etc.
-    Conflito,
-    /// O DRE não está cadastrado e o username não está sendo usado.
-    Disponivel,
+pub enum Cadastro {
+    CadastroRealizado(String),
+    CadastroRedundante(String),
 }
 
-pub async fn achar_usuario(dre: &str, username: &str) -> Result<ConsultaLdap, ConsultaLdapErro> {
-    let bind_dn =
-        std::env::var("LDAP_BIND_DN").expect("Por favor forneça uma variável LDAP_BIND_DN");
-    let bind_pw =
-        std::env::var("LDAP_BIND_PW").expect("Por favor forneça uma variável LDAP_BIND_PW");
-    let url = std::env::var("LDAP_URL").expect("Por favor forneça uma variável LDAP_URL");
-
-    let search_dre = format!("(dre={})", ldap_escape(dre));
-    let search_username = format!("(uid={})", ldap_escape(username));
+pub async fn cadastro_ldap(
+    dre: &str,
+    nome: &str,
+) -> Result<Cadastro, CadastroErro> {
+    let bind_dn = std::env::var("LDAP_BIND_DN")
+        .expect("Por favor forneça uma variável LDAP_BIND_DN");
+    let bind_pw = std::env::var("LDAP_BIND_PW")
+        .expect("Por favor forneça uma variável LDAP_BIND_PW");
+    let url = std::env::var("LDAP_URL")
+        .expect("Por favor forneça uma variável LDAP_URL");
 
     let (conn, mut ldap) = LdapConnAsync::new(&url).await?;
-
     ldap3::drive!(conn);
-
     ldap.simple_bind(&bind_dn, &bind_pw).await?.success()?;
+
+    if let Some(uid) = consulta_dre(dre, &mut ldap).await? {
+        ldap.unbind().await?;
+
+        return Ok(Cadastro::CadastroRedundante(uid));
+    }
+
+    let uid = achar_nome_livre(nome, &mut ldap).await?;
+
+    ldap.unbind().await?;
+
+    Ok(Cadastro::CadastroRealizado(uid))
+}
+
+async fn consulta_dre(
+    dre: &str,
+    ldap: &mut Ldap,
+) -> Result<Option<String>, CadastroErro> {
+    let search_dre = format!("(dre={})", ldap_escape(dre));
 
     let (dre_s, _) = ldap
         .search(
@@ -48,19 +68,26 @@ pub async fn achar_usuario(dre: &str, username: &str) -> Result<ConsultaLdap, Co
         .await?
         .success()?;
 
-    if let Some(dre_s) = dre_s.first() {
-        ldap.unbind().await?;
+    let Some(dre_s) = dre_s.first() else {
+        return Ok(None);
+    };
 
-        let dre_s = SearchEntry::construct(dre_s.clone());
-        let uid = dre_s
-            .attrs
-            .get("uid")
-            .ok_or(ConsultaLdapErro::FalhaUid)?
-            .first()
-            .ok_or(ConsultaLdapErro::FalhaUid)?;
+    let dre_s = SearchEntry::construct(dre_s.clone());
+    let uid = dre_s
+        .attrs
+        .get("uid")
+        .ok_or(CadastroErro::FalhaUid)?
+        .first()
+        .ok_or(CadastroErro::FalhaUid)?;
 
-        return Ok(ConsultaLdap::Registrado(uid.to_string()));
-    }
+    Ok(Some(uid.to_string()))
+}
+
+async fn consulta_usuario_existe(
+    username: &str,
+    ldap: &mut Ldap,
+) -> Result<bool, CadastroErro> {
+    let search_username = format!("(uid={})", ldap_escape(username));
 
     let (username_s, _) = ldap
         .search(
@@ -72,11 +99,17 @@ pub async fn achar_usuario(dre: &str, username: &str) -> Result<ConsultaLdap, Co
         .await?
         .success()?;
 
-    ldap.unbind().await?;
+    Ok(!username_s.is_empty())
+}
 
-    if username_s.is_empty() {
-        Ok(ConsultaLdap::Disponivel)
-    } else {
-        Ok(ConsultaLdap::Conflito)
+async fn achar_nome_livre(
+    nome: &str,
+    ldap: &mut Ldap,
+) -> Result<String, CadastroErro> {
+    for username in Nome::from_str(nome)?.usernames() {
+        if !consulta_usuario_existe(&username, ldap).await? {
+            return Ok(username);
+        }
     }
+    Err(CadastroErro::UsuarioDificil)
 }
