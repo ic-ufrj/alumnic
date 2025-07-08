@@ -16,6 +16,25 @@ pub enum NomeErro {
 pub struct Nome(Vec<String>);
 
 impl Nome {
+    /// Essa função gera uma lista de nomes de usuário para um nome. Ele gera
+    /// todas as possibilidades de sobrenomes inteiros ou iniciais que têm
+    /// menos de 20 caracteres
+    ///
+    /// # Exemplos
+    ///
+    ///     use alumnic::utils::nome::Nome;
+    ///
+    ///     let nome: Nome = "ARTHUR BACCI DE OLIVEIRA".parse().unwrap();
+    ///     assert_eq!(
+    ///         nome.usernames().collect::<Vec<String>>(),
+    ///         vec![
+    ///             "arthurbo",
+    ///             "arthurboliveira",
+    ///             "arthurbaccio",
+    ///             "arthurbaccioliveira",
+    ///         ],
+    ///     );
+    ///
     pub fn usernames(&self) -> impl Iterator<Item = String> {
         // Isso gera um iterador com os elementos contando em binário, ou seja,
         // algo como isso:
@@ -45,7 +64,9 @@ impl Nome {
                 .collect()
         }
 
-        contagem.map(|m| expansao_sobrenomica(m, &self.0))
+        contagem
+            .map(|m| expansao_sobrenomica(m, &self.0))
+            .filter(|u| u.len() < 20)
     }
 }
 
@@ -75,13 +96,20 @@ impl FromStr for Nome {
             // função
             .collect::<Result<String, Self::Err>>()?;
 
-        let v: Vec<String> = string_sanitizada
+        let mut v: Vec<String> = string_sanitizada
             .split_whitespace()
             .filter(|x| !x.is_empty())
             .filter(|x| !["de", "do", "da", "dos", "das"].contains(x))
             .map(str::to_string)
             .collect();
 
+        // Cortar nomes gigantes, talvez seja melhor retornar um erro, mas pode
+        // ser que existam pessoas com mais de 10 nomes, talvez
+        v.truncate(10);
+
+        // É importante que não se crie nomes sem sobrenome, mas, caso permita,
+        // é necessário modificar a geração de usernamees para não assumir que
+        // os nomes sempre têm ao menos um sobrenome
         if v.len() > 1 {
             Ok(Nome(v))
         } else {
@@ -97,8 +125,10 @@ mod tests {
     #[test]
     fn testar_usernames() {
         assert_eq!(
-            Nome::from_str("JOÃO CARLOS PEREIRA DA SILVA").unwrap()
-                .usernames().collect::<Vec<String>>(),
+            Nome::from_str("JOÃO CARLOS PEREIRA DA SILVA")
+                .unwrap()
+                .usernames()
+                .collect::<Vec<String>>(),
             vec![
                 "joaocps",
                 "joaocpsilva",
@@ -107,8 +137,7 @@ mod tests {
                 "joaocarlosps",
                 "joaocarlospsilva",
                 "joaocarlospereiras",
-                "joaocarlospereirasilva",
             ],
-        )
+        );
     }
 }
