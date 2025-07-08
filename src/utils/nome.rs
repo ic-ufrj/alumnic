@@ -1,28 +1,52 @@
+//! Esse módulo implementa funções para lidar com nomes, ele é capaz de fazer
+//! uma comparação mais bruta entre nomes (por exemplo, "JOSE LIMA SILVA" é
+//! considerado igual a "José Lima da Silva") e também possui a função
+//! [`Nome::usernames`], que é um iterador de nomes de usuário válidos para usar
+//! nos sistemas do Instituto.
+
 use itertools::Itertools;
 use std::str::FromStr;
 use thiserror::Error;
 use unicode_normalization::UnicodeNormalization;
 
-#[derive(Debug, Error)]
+/// Um erro ao tentar converter uma string para um [Nome]. Ocorre quando o nome
+/// não é considerado válido.
+#[derive(Debug, Error, PartialEq, Eq)]
 pub enum NomeErro {
+    /// O nome tem caracteres que não são letras, com ou sem acentos, cedilhas
+    /// ou espaços.
     #[error("O nome possui caracteres desconhecidos")]
     CaracterEstranho,
 
+    /// O nome não possui o mínimo de 2 palavras, sem contar "de", "da", etc.
     #[error("O nome não tem o mínimo de dois nomes")]
     NomeCurto,
 }
 
-#[derive(Debug, Clone)]
+/// Representação bruta e simplificada de um nome. Letras com acentos têm seus
+/// acentos ignorados e cedilhas são substituídas por "c"s. Além disso, as
+/// palavras "de", "do", "da", "dos" e "das" são removidas. Isso é útil para
+/// gerar os uids para o LDAP e para comparar strings com nomes.
+///
+/// # Examples
+///
+///     # use alumnic::utils::nome::Nome;
+///     let nome1: Nome = "JOSE FELIPE ARAUJO".parse().unwrap();
+///     let nome2: Nome = "José Felipe de Araújo".parse().unwrap();
+///
+///     assert_eq!(nome1, nome2);
+///
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Nome(Vec<String>);
 
 impl Nome {
     /// Essa função gera uma lista de nomes de usuário para um nome. Ele gera
     /// todas as possibilidades de sobrenomes inteiros ou iniciais que têm
-    /// menos de 20 caracteres
+    /// menos de 20 caracteres.
     ///
-    /// # Exemplos
+    /// # Examples
     ///
-    ///     use alumnic::utils::nome::Nome;
+    ///     # use alumnic::utils::nome::Nome;
     ///
     ///     let nome: Nome = "ARTHUR BACCI DE OLIVEIRA".parse().unwrap();
     ///     assert_eq!(
@@ -73,6 +97,26 @@ impl Nome {
 impl FromStr for Nome {
     type Err = NomeErro;
 
+    /// Converte uma string para um [Nome].
+    ///
+    /// # Examples
+    ///
+    ///     # use alumnic::utils::nome::{Nome, NomeErro};
+    ///     # use std::str::FromStr;
+    ///     let nome1 = Nome::from_str("José");
+    ///     let nome2 = "Carlos Pereira".parse::<Nome>();
+    ///     let nome3 = "Carlos 71".parse::<Nome>();
+    ///
+    ///     assert_eq!(nome1, Err(NomeErro::NomeCurto));
+    ///     assert!(nome2.is_ok());
+    ///     assert_eq!(nome3, Err(NomeErro::CaracterEstranho));
+    ///
+    /// # Errors
+    ///
+    /// - Retorna erro se o nome possuir um caractere que não seja uma letra,
+    /// com ou sem acento, um cedilha ou um espaço; e
+    /// - Retorna erro se o nome não possuir o mínimo de duas palavras, sem
+    /// contar "de", "do", etc.
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let string_sanitizada = s
             // Substitui os cedilha por C
