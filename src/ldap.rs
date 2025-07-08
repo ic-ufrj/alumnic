@@ -1,29 +1,54 @@
+//! Funções relacionadas ao sistema de LDAP usado pela supervisão do LCI para
+//! cadastro dos alunos do Instituto de Computação.
 use crate::utils::nome::{Nome, NomeErro};
 use ldap3::{Ldap, LdapConnAsync, LdapError, Scope, SearchEntry, ldap_escape};
 use std::str::FromStr;
 use thiserror::Error;
 
+/// Representa um erro ao tentar cadastrar um usuário.
 #[derive(Debug, Error)]
 pub enum CadastroErro {
+    /// Um problema com a conexão com o LDAP. Pode ser um problema de rede ou
+    /// um problema com as operações feitas no LDAP. Para saber, acesse a
+    /// estrutura [LdapError].
     #[error("Houve um problema com o ldap3")]
     ErroLdap(#[from] LdapError),
 
+    /// Houve um erro ao tentar achar o uid de um usuário cujo DRE já está
+    /// registrado. Se esse erro foi retornado, significa que o usuário está
+    /// cadastrado, mas não se sabe com que nome.
     #[error("Houve um erro ao encontrar o uid do DRE que já está registrado")]
     FalhaUid,
 
+    /// Esse erro acontece quando todos os usernames gerados para um usuário
+    /// já estão ocupados. Com a grande quantidade de tentativas, é mais
+    /// provável que há um problema com o LDAP ou com o alumnic do que realmente
+    /// não ter nome livre. Nesse caso, deve-se verificar se realmente todas
+    /// as variações geradas com a função
+    /// [usernames](crate::utils::nome::Nome::usernames) estão sendo usadas.
     #[error("Não foi possível encontrar um nome de usuário válido")]
     UsuarioDificil,
 
+    /// Houve um problema ao processar o nome retornado pelo Gnosys/SIGA. Isso
+    /// significa que, provavelmente, a nossa forma de acessar dados do SIGA
+    /// quebrou. Também pode ocorrer caso o usuário tenha um nome "diferente",
+    /// ou seja, que não segue as regras para criação de um [Nome].
     #[error("Houve um erro ao processar o nome")]
     ErroDeNome(#[from] NomeErro),
 }
 
+/// Representa as informações sobre o cadastro de um usuário no LDAP.
 #[derive(Debug)]
 pub enum Cadastro {
+    /// O cadastro foi feito com sucesso com essa string representando o
+    /// username/uid do usuário recém-cadastrado.
     CadastroRealizado(String),
+    /// O cadastro já existia antes. A string representa o username/uid do
+    /// usuário **que já estava cadastrado**.
     CadastroRedundante(String),
 }
 
+/// TODO: Função ainda não completamente implementada...
 pub async fn cadastro_ldap(
     dre: &str,
     nome: &str,
