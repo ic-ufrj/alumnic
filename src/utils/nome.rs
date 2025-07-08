@@ -69,8 +69,7 @@ impl Nome {
         // Isso é usado para testar as possibilidades de abertura dos
         // sobrenomes, false representa somente a primeira letra enquanto true
         // representa o nome inteiro.
-        let contagem = std::iter::repeat([false, true])
-            .take(self.0.len() - 1)
+        let contagem = std::iter::repeat_n([false, true], self.0.len() - 1)
             .multi_cartesian_product();
 
         fn expansao_sobrenomica(mask: Vec<bool>, names: &[String]) -> String {
@@ -114,18 +113,17 @@ impl FromStr for Nome {
     /// # Errors
     ///
     /// - Retorna erro se o nome possuir um caractere que não seja uma letra,
-    /// com ou sem acento, um cedilha ou um espaço; e
+    ///   com ou sem acento, um cedilha ou um espaço; e
     /// - Retorna erro se o nome não possuir o mínimo de duas palavras, sem
-    /// contar "de", "do", etc.
+    ///   contar "de", "do", etc.
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let string_sanitizada = s
             // Substitui os cedilha por C
-            .replace('ç', "C")
-            .replace('Ç', "C")
+            .replace(['ç', 'Ç'], "C")
             // Separa os acentos dos caracteres
             .nfd()
             // Junto com isso, ele transforma Á em A, etc
-            .filter(|x| x.is_ascii())
+            .filter(char::is_ascii)
             // Agora ele faz tudo ficar minúsculo
             .map(|x| x.to_ascii_lowercase())
             // Se existir um caractere que não seja uma letra minúscula ou
