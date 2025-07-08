@@ -10,7 +10,7 @@ use thiserror::Error;
 pub enum CadastroErro {
     /// Um problema com a conexão com o LDAP. Pode ser um problema de rede ou
     /// um problema com as operações feitas no LDAP. Para saber, acesse a
-    /// estrutura [LdapError].
+    /// estrutura [`LdapError`].
     #[error("Houve um problema com o ldap3")]
     ErroLdap(#[from] LdapError),
 
@@ -25,14 +25,14 @@ pub enum CadastroErro {
     /// provável que há um problema com o LDAP ou com o alumnic do que realmente
     /// não ter nome livre. Nesse caso, deve-se verificar se realmente todas
     /// as variações geradas com a função
-    /// [usernames](crate::utils::nome::Nome::usernames) estão sendo usadas.
+    /// [`usernames`](crate::utils::nome::Nome::usernames) estão sendo usadas.
     #[error("Não foi possível encontrar um nome de usuário válido")]
     UsuarioDificil,
 
     /// Houve um problema ao processar o nome retornado pelo Gnosys/SIGA. Isso
     /// significa que, provavelmente, a nossa forma de acessar dados do SIGA
     /// quebrou. Também pode ocorrer caso o usuário tenha um nome "diferente",
-    /// ou seja, que não segue as regras para criação de um [Nome].
+    /// ou seja, que não segue as regras para criação de um [`Nome`].
     #[error("Houve um erro ao processar o nome")]
     ErroDeNome(#[from] NomeErro),
 }
