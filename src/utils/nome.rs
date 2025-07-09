@@ -60,6 +60,12 @@ impl Nome {
     ///     );
     ///
     pub fn usernames(&self) -> impl Iterator<Item = String> {
+        // Essa função recebe uma máscara e retorna um username gerado a partir
+        // dela. Por exemplo: mascara = [false, true, false],
+        // names = [Jose, Pereira, Augusto, Silva], então ele vai gerar um nome
+        // "josepaugustos". Se fosse [true, false, false], seria
+        // "josepereiraas". Vale ressaltar que o primeiro nome sempre aparece
+        // inteiro.
         fn expansao_sobrenomica(mask: Vec<bool>, names: &[String]) -> String {
             let sobrenomes_expandidos =
                 mask.into_iter().enumerate().map(|(i, e)| {
