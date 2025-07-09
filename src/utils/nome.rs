@@ -93,7 +93,6 @@ impl Nome {
         let contagem = std::iter::repeat_n([false, true], self.0.len() - 1)
             .multi_cartesian_product();
 
-
         contagem
             .map(|m| expansao_sobrenomica(m, &self.0))
             .filter(|u| u.len() < 20)
