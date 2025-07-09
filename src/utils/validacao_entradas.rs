@@ -1,3 +1,8 @@
+//! Módulo para validar os dados de cadastro de um aluno, garantindo não só que
+//! não há entradas maliciosas, mas também que os dados foram corretamente
+//! preenchidos e que não houve erros por parte de um usuário bem-intencionado.
+//! Também ajuda a converter informações que possuem várias representações para
+//! a representação "padrão" usada pelo SIGA e por nosso sistema de LDAP.
 use regex::Regex;
 
 /// Processa um DRE, retornando uma versão "limpa" dele caso a entrada seja
@@ -44,6 +49,8 @@ pub fn processar_dre(dre: &str) -> Option<String> {
 /// assert_eq!(processar_data("1 / 1 / 25"), Some("01/01/2025".to_string()));
 /// assert_eq!(processar_data("01012025"), Some("01/01/2025".to_string()));
 /// assert_eq!(processar_data("25 12 2002"), Some("25/12/2002".to_string()));
+/// assert_eq!(processar_data("25 12 02"), None);
+/// assert_eq!(processar_data("1 1 2002"), None);
 /// assert_eq!(processar_data("25/12/02"), Some("25/12/2002".to_string()));
 /// ```
 pub fn processar_data(data: &str) -> Option<String> {
