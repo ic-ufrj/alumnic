@@ -1,11 +1,11 @@
+use regex::Regex;
+
 pub fn validar_dre(dre: &str) -> bool {
-    dre.len() == 9 && dre.chars().all(|c| c.is_ascii_digit())
+    let re = Regex::new(r"^\d{9}$").unwrap();
+    re.is_match(dre)
 }
 
 pub fn validar_data_emissao(data: &str) -> bool {
-    data.is_ascii()
-        && data.len() == 5
-        && &data[2..=2] == "/"
-        && data[0..=1].chars().all(|c| c.is_ascii_digit())
-        && data[3..=4].chars().all(|c| c.is_ascii_digit())
+    let re = Regex::new(r"\d{2}/\d{2}/\d{4}").unwrap();
+    re.is_match(data)
 }

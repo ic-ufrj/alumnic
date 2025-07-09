@@ -21,4 +21,5 @@ ldap3 = "0.11.5"
 clap = { version = "4.5", features = ["derive"] }
 unicode-normalization = "0.1"
 itertools = "0.14"
+regex = "1"
 
