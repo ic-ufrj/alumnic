@@ -63,6 +63,25 @@ pub async fn consultar_cadastro_ldap(
     dre: &str,
     nome: &str,
 ) -> Result<Cadastro, CadastroErro> {
+    rodar_ldap(
+        |mut ldap| async move {
+            match consulta_dre(dre, &mut ldap).await {
+                Err(err) => (Err(err), ldap),
+                Ok(Some(uid)) => (Ok(Cadastro::CadastroRedundante(uid)), ldap),
+                Ok(None) => match achar_nome_livre(nome, &mut ldap).await {
+                    Err(err) => (Err(err), ldap),
+                    Ok(uid) => (Ok(Cadastro::CadastroDisponivel(uid)), ldap),
+                }
+            }
+        }
+    ).await
+}
+
+async fn rodar_ldap<T, F, Fut>(f: F) -> Result<T, CadastroErro>
+where
+    F: FnOnce(Ldap) -> Fut,
+    Fut: Future<Output = (Result<T, CadastroErro>, Ldap)>,
+{
     let bind_dn = std::env::var("LDAP_BIND_DN")
         .expect("Por favor forneça uma variável LDAP_BIND_DN");
     let bind_pw = std::env::var("LDAP_BIND_PW")
@@ -73,18 +92,12 @@ pub async fn consultar_cadastro_ldap(
     let (conn, mut ldap) = LdapConnAsync::new(&url).await?;
     ldap3::drive!(conn);
     ldap.simple_bind(&bind_dn, &bind_pw).await?.success()?;
-
-    if let Some(uid) = consulta_dre(dre, &mut ldap).await? {
-        ldap.unbind().await?;
-
-        return Ok(Cadastro::CadastroRedundante(uid));
-    }
-
-    let uid = achar_nome_livre(nome, &mut ldap).await?;
+    
+    let (ret, mut ldap) = f(ldap).await;
 
     ldap.unbind().await?;
 
-    Ok(Cadastro::CadastroDisponivel(uid))
+    ret
 }
 
 async fn consulta_dre(
