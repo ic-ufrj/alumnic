@@ -180,7 +180,7 @@ mod tests {
             vec![
                 "joaocps",
                 "joaocpsilva",
-                "joaocpereirass",
+                "joaocpereiras",
                 "joaocpereirasilva",
                 "joaocarlosps",
                 "joaocarlospsilva",
