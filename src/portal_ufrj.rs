@@ -1,3 +1,8 @@
+//! Esse módulo é responsável pela integração com o "Gnosys", plataforma para
+//! autenticar os documentos do SIGA. Aqui, ele é usado somente para autenticar
+//! o documento de "Regularmente Matriculado", usado para o cadastro de alunos
+//! novos.
+
 use chrono::Local;
 use reqwest::ClientBuilder;
 use select::document::Document;
@@ -9,30 +14,58 @@ const GET_URL: &str =
     "https://gnosys.ufrj.br/Documentos/autenticacao/regularmenteMatriculado";
 const POST_URL: &str = "https://gnosys.ufrj.br/Documentos/autenticacao.seam";
 
+/// Representa um erro no processo de consulta.
 #[derive(Debug, Error)]
 pub enum ConsultaErro {
+    /// Um erro com a biblioteca de rede. A natureza do erro pode ser vista
+    /// acessando ele diretamente. Provavelmente, é um erro de conexão.
     #[error("houve um problema com o reqwest")]
     ErroReqwest(#[from] reqwest::Error),
 
+    /// Um problema ao achar um componente do Gnosys necessário para fazer a
+    /// consulta. Isso pode ser uma mudança no Gnosys ou algum erro exibido
+    /// em HTTP.
     #[error("não foi possível obter o ViewState")]
     SemViewState,
 
+    /// O retorno do Gnosys não foi inválido nem válido, o que é estranho.
+    /// Possivelmente uma mudança por parte do SIGA.
     #[error("o retorno do gnosys está estranho, não é válido nem inválido")]
     CombinacaoInvalida,
 
+    /// A resposta não tem somente três itens (Nome, RG, Curso), o que pode
+    /// indicar uma mudança no Gnosys, que agora exibe mais ou menos campos.
     #[error(
         "número estranho de itens na resposta, pode ser uma mudança do gnosys"
     )]
     NumeroEstranhoDeItens,
 }
 
+/// Representa o resultado de uma consulta bem-sucedida.
 #[derive(Debug)]
 pub enum Consulta {
+    /// O aluno é do curso de Ciência da Computação e `nome` é seu nome
+    /// completo.
     AlunoDoCurso { nome: String },
+    /// O aluno é da UFRJ, mas de outro curso. `nome` é seu nome completo e
+    /// `curso` é o nome de seu curso.
     AlunoOutroCurso { nome: String, curso: String },
+    /// O documento não foi autenticado com sucesso.
     Desconhecido,
 }
 
+/// Realiza uma consulta no sistema Gnosys para validar um documento de
+/// regularmente matriculado com as informações necessárias:
+///
+/// - `dre`: 9 dígitos
+/// - `data`: Data de emissão no formato `25/12/2025`
+/// - `hora`: Hora de emissão no formato `23:59`
+/// - `codigo`: código no formato `XXXX.XXXX.XXXX.XXXX.XXXX.XXXX.XXXX.XXXX`
+///
+/// # Errors
+///
+/// Retorna erro se tiver problemas de conexão ou ao lidar com a plataforma
+/// Gnosys.
 pub async fn consulta(
     dre: &str,
     data: &str,
