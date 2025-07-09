@@ -60,18 +60,6 @@ impl Nome {
     ///     );
     ///
     pub fn usernames(&self) -> impl Iterator<Item = String> {
-        // Isso gera um iterador com os elementos contando em binário, ou seja,
-        // algo como isso:
-        // [false, false]
-        // [false, true]
-        // [true, false]
-        // [true, true]
-        // Isso é usado para testar as possibilidades de abertura dos
-        // sobrenomes, false representa somente a primeira letra enquanto true
-        // representa o nome inteiro.
-        let contagem = std::iter::repeat_n([false, true], self.0.len() - 1)
-            .multi_cartesian_product();
-
         fn expansao_sobrenomica(mask: Vec<bool>, names: &[String]) -> String {
             let sobrenomes_expandidos =
                 mask.into_iter().enumerate().map(|(i, e)| {
@@ -86,6 +74,19 @@ impl Nome {
                 .chain(sobrenomes_expandidos)
                 .collect()
         }
+
+        // Isso gera um iterador com os elementos contando em binário, ou seja,
+        // algo como isso:
+        // [false, false]
+        // [false, true]
+        // [true, false]
+        // [true, true]
+        // Isso é usado para testar as possibilidades de abertura dos
+        // sobrenomes, false representa somente a primeira letra enquanto true
+        // representa o nome inteiro.
+        let contagem = std::iter::repeat_n([false, true], self.0.len() - 1)
+            .multi_cartesian_product();
+
 
         contagem
             .map(|m| expansao_sobrenomica(m, &self.0))
