@@ -40,16 +40,26 @@ pub enum CadastroErro {
 /// Representa as informações sobre o cadastro de um usuário no LDAP.
 #[derive(Debug)]
 pub enum Cadastro {
-    /// O cadastro foi feito com sucesso com essa string representando o
-    /// username/uid do usuário recém-cadastrado.
-    CadastroRealizado(String),
+    /// O cadastro pode ser feito com sucesso e a string representa o
+    /// uid/sername do usuário que deve ser criado.
+    CadastroDisponivel(String),
     /// O cadastro já existia antes. A string representa o username/uid do
     /// usuário **que já estava cadastrado**.
     CadastroRedundante(String),
 }
 
-/// TODO: Função ainda não completamente implementada...
-pub async fn cadastro_ldap(
+/// Consulta se um usuário já está cadastrado no LDAP a partir da DRE e, se ele
+/// não estiver, acha um uid/username disponível para ele. Se ele estiver, diz
+/// qual uid/username o usuário tem cadastrado.
+///
+/// # Errors
+///
+/// Retorna erro caso ocorra um problema ao se comunicar com o LDAP, caso não
+/// consiga achar o uid que o usuário tem, caso não consiga gerar um username
+/// válido ou caso o nome do usuário não seja válido.
+///
+/// Mais informações em [CadastroErro]
+pub async fn consultar_cadastro_ldap(
     dre: &str,
     nome: &str,
 ) -> Result<Cadastro, CadastroErro> {
@@ -74,7 +84,7 @@ pub async fn cadastro_ldap(
 
     ldap.unbind().await?;
 
-    Ok(Cadastro::CadastroRealizado(uid))
+    Ok(Cadastro::CadastroDisponivel(uid))
 }
 
 async fn consulta_dre(

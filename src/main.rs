@@ -38,7 +38,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             println!("{r:?}");
         },
         Comandos::Registro { dre, nome } => {
-            let r = alumnic::ldap::cadastro_ldap(dre, nome).await?;
+            let r = alumnic::ldap::consultar_cadastro_ldap(dre, nome).await?;
             println!("{r:?}");
         },
     }
