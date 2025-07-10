@@ -110,3 +110,87 @@ pub fn processar_hora(hora: &str) -> Option<String> {
         )
     })
 }
+
+/// Processa um dos códigos gerados pelo SIGA para autenticação do documento de
+/// regularmente matriculado. Aceita espaços entre os segmentos e no começo e
+/// final do código e converte para um código mais limpo. Não aceita caracteres
+/// que não fazem parte de um número hexadecimal.
+///
+/// # Examples
+///
+/// ```
+/// # use alumnic::utils::validacao_entradas::processar_codigo;
+/// assert_eq!(
+///     processar_codigo("A3B1.7E5D.F002.19AC.4F6B.9D3E.82C1.BAAF"),
+///     Some("A3B1.7E5D.F002.19AC.4F6B.9D3E.82C1.BAAF".to_string()),
+/// );
+///
+/// // Minúsculas = inválido.
+/// assert_eq!(
+///     processar_codigo("a3b1.7e5d.f002.19ac.4f6b.9d3e.82c1.baaf"),
+///     None,
+/// );
+///
+/// // Número de segmentos diferente de oito = inválido.
+/// assert_eq!(
+///     processar_codigo("A3B1.7E5D.F002.19AC.4F6B.9D3E.82C1"),
+///     None,
+/// );
+/// assert_eq!(
+///     processar_codigo("A3B1.7E5D.F002.19AC.4F6B.9D3E.82C1.BAAF.1234"),
+///     None,
+/// );
+///
+/// // Caractere não hexadecimal = inválido.
+/// assert_eq!(
+///     processar_codigo("A3B1.7E5D.F002.19AC.4F6B.9D3E.82C1.ZZZZ"),
+///     None,
+/// );
+///
+/// // Dois pontos seguidos = inválido.
+/// assert_eq!(
+///     processar_codigo("A3B1..7E5D.F002.19AC.4F6B.9D3E.82C1.BAAF"),
+///     None,
+/// );
+///
+/// // Obviamente inválido.
+/// assert_eq!(processar_codigo(""), None);
+///
+/// // Espaços não devem ser um problema.
+/// assert_eq!(
+///     processar_codigo(" A3B1 . 7E5D  .F002.19AC.4F6B.9D3E.82C1.BAAF "),
+///     Some("A3B1.7E5D.F002.19AC.4F6B.9D3E.82C1.BAAF".to_string()),
+/// );
+///
+/// // Segmento com número de caracteres diferente de quatro.
+/// assert_eq!(
+///     processar_codigo("A3B1.7E5D.F02.19AC.4F6B.9D3E.82C1.BAAF"),
+///     None
+/// );
+/// ```
+pub fn processar_codigo(codigo: &str) -> Option<String> {
+    let re = Regex::new(concat!(
+        r"^\s*([0-9A-F]{4})",
+        r"\s*\.\s*([0-9A-F]{4})",
+        r"\s*\.\s*([0-9A-F]{4})",
+        r"\s*\.\s*([0-9A-F]{4})",
+        r"\s*\.\s*([0-9A-F]{4})",
+        r"\s*\.\s*([0-9A-F]{4})",
+        r"\s*\.\s*([0-9A-F]{4})",
+        r"\s*\.\s*([0-9A-F]{4})\s*$",
+    )).unwrap();
+
+    re.captures(codigo).map(|caps| {
+        format!(
+            "{}.{}.{}.{}.{}.{}.{}.{}",
+            &caps[1],
+            &caps[2],
+            &caps[3],
+            &caps[4],
+            &caps[5],
+            &caps[6],
+            &caps[7],
+            &caps[8],
+        )
+    })
+}
