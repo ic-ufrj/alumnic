@@ -74,3 +74,39 @@ pub fn processar_data(data: &str) -> Option<String> {
             )
         })
 }
+
+/// Processa uma hora de emissão, retirando espaços adicionais entre os números.
+///
+/// # Examples
+///
+/// ```
+/// # use alumnic::utils::validacao_entradas::processar_hora;
+/// assert_eq!(processar_hora("16 :2"), Some("16:02".to_string()));
+/// assert_eq!(processar_hora("9:5"), Some("09:05".to_string()));
+/// assert_eq!(processar_hora("23:59"), Some("23:59".to_string()));
+/// assert_eq!(processar_hora("00:00"), Some("00:00".to_string()));
+/// assert_eq!(processar_hora("7 : 8"), Some("07:08".to_string()));
+/// assert_eq!(processar_hora(" 2 : 3 "), Some("02:03".to_string()));
+/// assert_eq!(processar_hora("1:23"), Some("01:23".to_string()));
+/// assert_eq!(processar_hora("12:7"), Some("12:07".to_string()));
+/// // Não há uma verificação muito detalhada das horas, basta ser dois números
+/// // que é o suficiente.
+/// assert_eq!(processar_hora("24:00"), Some("24:00".to_string()));
+/// assert_eq!(processar_hora("12:60"), Some("12:60".to_string()));
+/// assert_eq!(processar_hora("::"), None);
+/// assert_eq!(processar_hora("abc"), None);
+/// assert_eq!(processar_hora("12:34:56"), None);
+/// assert_eq!(processar_hora(""), None);
+/// assert_eq!(processar_hora("  "), None);
+/// ```
+pub fn processar_hora(hora: &str) -> Option<String> {
+    let re = Regex::new(r"^\s*(\d{1,2})\s*\:\s*(\d{1,2})\s*$").unwrap();
+
+    re.captures(hora).map(|caps| {
+        format!(
+            "{:02}:{:02}",
+            &caps[1].parse::<u8>().unwrap(),
+            &caps[2].parse::<u8>().unwrap()
+        )
+    })
+}
