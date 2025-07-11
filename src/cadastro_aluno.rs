@@ -1,6 +1,6 @@
 //! Módulo com os tipos e funções necessárias para o cadastro de um aluno novo.
-use chrono::{DateTime, Local};
-use serde::{Deserialize, Serialize};
+use secrecy::SecretString;
+use serde::Deserialize;
 use serde_email::Email;
 
 /// Struct contendo os dados para cadastrar um novo usuário. Esses dados são
@@ -9,7 +9,7 @@ use serde_email::Email;
 /// `data_emissao`, `hora_emissao` e `codigo` são dados contidos no documento
 /// "Regularmente Matriculado" disponível no SIGA, que é autenticado pelo
 /// programa. O `nome` deve ser o mesmo do SIGA.
-#[derive(Serialize, Deserialize)]
+#[derive(Deserialize)]
 pub struct DadosParaCadastro {
     /// O DRE, somente números, 9 dígitos.
     pub dre: String,
@@ -33,6 +33,6 @@ pub struct DadosParaCadastro {
     pub email_externo: Email,
     /// O telefone. Precisa ser um telefone válido.
     pub telefone: String,
-    /// A senha. Regras para as senhas ainda não foram definidas.
-    pub senha: String,
+    /// A senha. Precisam ter entre 6 e 32 caracteres.
+    pub senha: SecretString,
 }

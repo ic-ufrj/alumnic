@@ -23,6 +23,6 @@ unicode-normalization = "0.1"
 itertools = "0.14"
 regex = "1"
 email_address = "0.2"
-secrecy = "0.10"
+secrecy = { version = "0.10", features = ["serde"] }
 zeroize = "1.8"
 
