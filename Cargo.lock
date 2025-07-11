@@ -32,6 +32,7 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "clap",
+ "email_address",
  "itertools",
  "ldap3",
  "regex",

@@ -4,6 +4,7 @@
 //! Também ajuda a converter informações que possuem várias representações para
 //! a representação "padrão" usada pelo SIGA e por nosso sistema de LDAP.
 use crate::utils::nome::Nome;
+use email_address::EmailAddress;
 use regex::Regex;
 
 /// Processa um DRE, retornando uma versão "limpa" dele caso a entrada seja
@@ -243,4 +244,49 @@ pub fn processar_nome(nome: &str) -> Option<String> {
             .collect::<Vec<_>>()
             .join(" "),
     )
+}
+
+/// Processar/normalizar um endereço de email.
+///
+/// - Converte para minúsculas;
+/// - Remove espaços em volta; e
+/// - Retorna `None` se o formato for inválido.
+///
+/// # Examples
+///
+/// ```
+/// # use alumnic::utils::validacao_entradas::processar_email;
+/// // Email válido
+/// assert_eq!(
+///     processar_email("  JoSe@Exemplo.Com  "),
+///     Some("JoSe@exemplo.com".to_string())
+/// );
+///
+/// // Caractere ! é válido
+/// assert_eq!(
+///     processar_email("joão!@email.com"),
+///     Some("joão!@email.com".to_string()),
+/// );
+///
+/// // Faltando o domínio
+/// assert_eq!(processar_email("jose@"), None);
+///
+/// // Sem arroba
+/// assert_eq!(processar_email("jose.email.com"), None);
+///
+/// // Duplo arroba
+/// assert_eq!(processar_email("jose@joao@email.com"), None);
+///
+/// // Duplo arroba válido
+/// assert_eq!(
+///     processar_email(r#""jose@joao"@email.com"#),
+///     Some(r#""jose@joao"@email.com"#.to_string()),
+/// );
+/// ```
+pub fn processar_email(email: &str) -> Option<String> {
+    let email: EmailAddress = email.trim().parse().ok()?;
+    let email =
+        format!("{}@{}", email.local_part(), email.domain().to_lowercase());
+    let email: EmailAddress = email.parse().ok()?;
+    Some(email.to_string())
 }
