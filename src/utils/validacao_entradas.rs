@@ -408,4 +408,3 @@ pub fn validar_senha(senha: &SecretString) -> bool {
 
     valid
 }
-
