@@ -63,12 +63,14 @@ pub fn processar_data(data: &str) -> Option<String> {
     let re2 = Regex::new(r"^\s*(\d{2})\s*(\d{2})\s*(\d{4})\s*$").unwrap();
 
     re1.captures(data)
+        // Testa a segunda expressão se a primeira falhar
         .or_else(move || re2.captures(data))
         .map(|caps| {
             format!(
                 "{:02}/{:02}/{}",
                 caps[1].parse::<u8>().unwrap(),
                 caps[2].parse::<u8>().unwrap(),
+                // Adiciona o 2000 se for um número de três dígitos
                 match caps[3].parse::<u16>().unwrap() {
                     x if x < 1000 => 2000 + x,
                     x => x,
@@ -226,22 +228,35 @@ pub fn processar_nome(nome: &str) -> Option<String> {
     nome.parse::<Nome>().ok()?;
 
     Some(
+        // Primeiro, converte o nome para todo minúsculo
         nome.to_lowercase()
+            // Separa em palavras
             .split_whitespace()
-            .filter(|x| !x.is_empty())
             .map(|x| {
+                // Mantém a palavra toda minúscula se for uma dessas
                 if ["de", "da", "do", "das", "dos"].contains(&x) {
                     x.to_string()
                 } else {
+                    // Capitaliza a palavra, primeiro pegando o primeiro
+                    // caractere
                     x.chars()
                         .next()
                         .unwrap()
+                        // Transformando ele em maiúsculo, o que retorna uma
+                        // lista de caracteres (o motivo disso é explicado na
+                        // documentação da função char::to_uppercase, da std do
+                        // Rust)
                         .to_uppercase()
+                        // Junta esse iterador do primeiro caractere maiúsculo
+                        // com os próximos caracteres (que continuam minúsculos)
                         .chain(x.chars().skip(1))
+                        // Transforma esse iterador de caracteres em uma String
                         .collect::<String>()
                 }
             })
+            // Coleta esse iterador de Strings em um vetor de Strings
             .collect::<Vec<_>>()
+            // Junta tudo com um espaço entre as palavras
             .join(" "),
     )
 }
@@ -284,10 +299,14 @@ pub fn processar_nome(nome: &str) -> Option<String> {
 /// );
 /// ```
 pub fn processar_email(email: &str) -> Option<String> {
+    // Tira espaços extras entre o email
     let email: EmailAddress = email.trim().parse().ok()?;
+    // Faz o domínio do email ficar minúsculo e monta um email novo
     let email =
         format!("{}@{}", email.local_part(), email.domain().to_lowercase());
+    // Processa esse email formado, para ter 100% de certeza que é válido
     let email: EmailAddress = email.parse().ok()?;
+    // Transforma ele em String novamente
     Some(email.to_string())
 }
 
