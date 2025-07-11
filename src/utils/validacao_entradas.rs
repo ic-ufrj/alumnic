@@ -277,6 +277,12 @@ pub fn processar_nome(nome: &str) -> Option<String> {
 ///     Some("JoSe@exemplo.com".to_string())
 /// );
 ///
+/// // Email válido com nome (que é ignorado)
+/// assert_eq!(
+///     processar_email("Maria <maria@exemplo.com>"),
+///     Some("maria@exemplo.com".to_string())
+/// );
+///
 /// // Caractere ! é válido
 /// assert_eq!(
 ///     processar_email("joão!@email.com"),
