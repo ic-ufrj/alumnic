@@ -290,3 +290,84 @@ pub fn processar_email(email: &str) -> Option<String> {
     let email: EmailAddress = email.parse().ok()?;
     Some(email.to_string())
 }
+
+/// Processa/normaliza números de telefone para um formato semelhante a
+/// `+5521987654321` ou `+552112345678` para números fixos
+///
+/// - Remove espaços, hífens, parênteses e `0` inicial no DDD;
+/// - Aceita números fixos e celulares; e
+/// - Retorna `None` se não for um número brasileiro válido.
+///
+/// # Examples
+///
+/// ```
+/// # use alumnic::utils::validacao_entradas::processar_telefone;
+/// // Celular com DDD e +55
+/// assert_eq!(
+///     processar_telefone("+55 (21) 98765-4321"),
+///     Some("+5521987654321".to_string())
+/// );
+///
+/// // Celular sem código de país
+/// assert_eq!(
+///     processar_telefone("(21) 98765-4321"),
+///     Some("+5521987654321".to_string())
+/// );
+///
+/// // Celular com DDD "021" (com zero)
+/// assert_eq!(
+///     processar_telefone("021 98765-4321"),
+///     Some("+5521987654321".to_string())
+/// );
+///
+/// // Celular sem parênteses
+/// assert_eq!(
+///     processar_telefone("21 987654321"),
+///     Some("+5521987654321".to_string())
+/// );
+///
+/// // Celular com espaços extras
+/// assert_eq!(
+///     processar_telefone(" 21  98765 - 4321 "),
+///     Some("+5521987654321".to_string())
+/// );
+///
+/// // Número fixo
+/// assert_eq!(
+///     processar_telefone("21 2345-6789"),
+///     Some("+552123456789".to_string())
+/// );
+///
+/// // DDD com zero de novo
+/// assert_eq!(
+///     processar_telefone("(085) 98765-4321"),
+///     Some("+5585987654321".to_string())
+/// );
+///
+/// // Sem DDD (considerado inválido)
+/// assert_eq!(processar_telefone("98765-4321"), None);
+///
+/// // Com caracteres inválidos
+/// assert_eq!(processar_telefone("telefone: (21) 98765-43!1"), None);
+///
+/// // Número muito curto
+/// assert_eq!(processar_telefone("12345"), None);
+///
+/// // Número muito longo
+/// assert_eq!(processar_telefone("+55 (21) 98765-432100000"), None);
+///
+/// // Somente números
+/// assert_eq!(
+///     processar_telefone("21987654321"),
+///     Some("+5521987654321".to_string()),
+/// );
+/// ```
+pub fn processar_telefone(telefone: &str) -> Option<String> {
+    let re =
+        Regex::new(r"^\s*(?:\+55)?\s*\(?0?(\d\d)\)?\s*(9?\d{4})\s*\-?\s*(\d{4})\s*$")
+            .unwrap();
+
+    re.captures(telefone).map(|caps| {
+        format!("+55{}{}{}", &caps[1], &caps[2], &caps[3])
+    })
+}
