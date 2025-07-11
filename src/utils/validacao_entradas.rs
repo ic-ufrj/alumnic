@@ -6,6 +6,8 @@
 use crate::utils::nome::Nome;
 use email_address::EmailAddress;
 use regex::Regex;
+use secrecy::{ExposeSecret, SecretString};
+use zeroize::Zeroize;
 
 /// Processa um DRE, retornando uma versão "limpa" dele caso a entrada seja
 /// válida e None caso a entrada não represente um DRE válido.
@@ -388,11 +390,22 @@ pub fn processar_email(email: &str) -> Option<String> {
 /// );
 /// ```
 pub fn processar_telefone(telefone: &str) -> Option<String> {
-    let re =
-        Regex::new(r"^\s*(?:\+55)?\s*\(?0?(\d\d)\)?\s*(9?\d{4})\s*\-?\s*(\d{4})\s*$")
-            .unwrap();
+    let re = Regex::new(
+        r"^\s*(?:\+55)?\s*\(?0?(\d\d)\)?\s*(9?\d{4})\s*\-?\s*(\d{4})\s*$",
+    )
+    .unwrap();
 
-    re.captures(telefone).map(|caps| {
-        format!("+55{}{}{}", &caps[1], &caps[2], &caps[3])
-    })
+    re.captures(telefone)
+        .map(|caps| format!("+55{}{}{}", &caps[1], &caps[2], &caps[3]))
 }
+
+/// Valida uma senha, representada com as funções da biblioteca [secrecy]. As
+/// informações retiradas da senha são devidamente zeradas da memória.
+pub fn validar_senha(senha: &SecretString) -> bool {
+    let mut l = senha.expose_secret().len();
+    let valid = l >= 6 && l <= 32;
+    l.zeroize();
+
+    valid
+}
+
