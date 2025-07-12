@@ -1,7 +1,11 @@
 //! Módulo com os tipos e funções necessárias para o cadastro de um aluno novo.
+use crate::ldap::{Cadastro, CadastroErro, consultar_cadastro_ldap};
+use crate::portal_ufrj::{Consulta, ConsultaErro, consulta};
+use crate::utils::nome::Nome;
+use crate::utils::validacao_entradas::*;
 use secrecy::SecretString;
 use serde::Deserialize;
-use serde_email::Email;
+use thiserror::Error;
 
 /// Struct contendo os dados para cadastrar um novo usuário. Esses dados são
 /// recebidos pela aplicação e são o suficiente para cadastrar a maior parte
@@ -14,9 +18,9 @@ pub struct DadosParaCadastro {
     /// O DRE, somente números, 9 dígitos.
     pub dre: String,
     /// A data de emissão contida no documento, no formato `dd/mm/aaaa`.
-    pub data_emissao: String,
+    pub data: String,
     /// A hora de emissão contida no documento, no formato `hh:mm`, 24 horas.
-    pub hora_emissao: String,
+    pub hora: String,
     /// O código contido no documento, no formato
     /// `XXXX.XXXX.XXXX.XXXX.XXXX.XXXX.XXXX.XXXX`.
     pub codigo: String,
@@ -30,9 +34,102 @@ pub struct DadosParaCadastro {
     /// comparação podem ser encontrados na documentação desse tipo.
     pub nome: String,
     /// O email externo. Precisa ser um email válido.
-    pub email_externo: Email,
+    pub email: String,
     /// O telefone. Precisa ser um telefone válido.
     pub telefone: String,
-    /// A senha. Precisam ter entre 6 e 32 caracteres.
+    /// A senha. Precisa ter entre 6 e 32 caracteres.
     pub senha: SecretString,
+}
+
+#[derive(Debug, Error)]
+pub enum ErroDeCadastro {
+    #[error("o DRE {0} não é válido")]
+    DREInvalido(String),
+    #[error("a data {0} não é válido")]
+    DataInvalida(String),
+    #[error("a hora {0} não é válido")]
+    HoraInvalida(String),
+    #[error("o código {0} não é válido")]
+    CodigoInvalido(String),
+    #[error("o nome {0} não é válido")]
+    NomeInvalido(String),
+    #[error("o email {0} não é válido")]
+    EmailInvalido(String),
+    #[error("o telefone {0} não é válido")]
+    TelefoneInvalido(String),
+    #[error("a senha precisa ter entre 6 e 32 caracteres")]
+    SenhaInvalida,
+
+    #[error("não foi possível obter informações do SIGA")]
+    ErroNaConsulta(#[from] ConsultaErro),
+    #[error("alunos de {0} não têm direito à conta do IC")]
+    AlunoOutroCurso(String),
+    #[error("seu documento de matrícula é inválido")]
+    DocumentoInvalido,
+
+    #[error("houve um problema ao verificar o estado do cadastro no LDAP")]
+    ErroNoCadastro(#[from] CadastroErro),
+    #[error("o cadastro já existe, com o username {0}")]
+    CadastroRedundante(String),
+
+    #[error("O nome informado {informado} não é o mesmo do SIGA {siga}")]
+    NomesDiferentes { informado: String, siga: String },
+}
+
+impl DadosParaCadastro {
+    pub async fn cadastrar(mut self) -> Result<String, ErroDeCadastro> {
+        self.dre = processar_dre(&self.dre)
+            .ok_or_else(move || ErroDeCadastro::DREInvalido(self.dre))?;
+        self.data = processar_data(&self.data)
+            .ok_or_else(move || ErroDeCadastro::DataInvalida(self.data))?;
+        self.hora = processar_hora(&self.hora)
+            .ok_or_else(move || ErroDeCadastro::HoraInvalida(self.hora))?;
+        self.codigo = processar_codigo(&self.codigo)
+            .ok_or_else(move || ErroDeCadastro::CodigoInvalido(self.codigo))?;
+        self.nome = processar_nome(&self.nome)
+            .ok_or_else(move || ErroDeCadastro::NomeInvalido(self.nome))?;
+        self.email = processar_email(&self.email)
+            .ok_or_else(move || ErroDeCadastro::EmailInvalido(self.email))?;
+        self.telefone =
+            processar_telefone(&self.telefone).ok_or_else(move || {
+                ErroDeCadastro::TelefoneInvalido(self.telefone)
+            })?;
+        validar_senha(&self.senha)
+            .then_some(())
+            .ok_or(ErroDeCadastro::SenhaInvalida)?;
+
+        // Faz a consulta no SIGA e no LDAP ao mesmo tempo
+        let (consulta_siga, consulta_ldap) = tokio::join!(
+            consulta(&self.dre, &self.data, &self.hora, &self.codigo),
+            consultar_cadastro_ldap(&self.dre, &self.nome),
+        );
+
+        let uid_ldap = match consulta_ldap? {
+            Cadastro::CadastroDisponivel(uid) => uid,
+            Cadastro::CadastroRedundante(uid) => {
+                Err(ErroDeCadastro::CadastroRedundante(uid))?
+            },
+        };
+
+        let nome_siga = match consulta_siga? {
+            Consulta::AlunoDoCurso { nome } => nome,
+            Consulta::AlunoOutroCurso { curso, .. } => {
+                Err(ErroDeCadastro::AlunoOutroCurso(curso))?
+            },
+            Consulta::Desconhecido => Err(ErroDeCadastro::DocumentoInvalido)?,
+        };
+
+        // Verifica se o nome é o mesmo do SIGA
+        if self.nome.parse::<Nome>() != nome_siga.parse() {
+            Err(ErroDeCadastro::NomesDiferentes {
+                informado: self.nome,
+                siga: nome_siga,
+            })?
+        }
+
+        // TODO: cadastrar no LDAP
+        todo!();
+
+        Ok(uid_ldap)
+    }
 }
