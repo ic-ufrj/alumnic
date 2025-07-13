@@ -1,7 +1,9 @@
 //! Funções relacionadas ao sistema de LDAP usado pela supervisão do LCI para
 //! cadastro dos alunos do Instituto de Computação.
 use crate::utils::nome::{Nome, NomeErro};
-use ldap3::{Ldap, LdapConnAsync, LdapError, Scope, SearchEntry, ldap_escape};
+use ldap3::{
+    Ldap, LdapConnAsync, LdapError, Mod, Scope, SearchEntry, ldap_escape,
+};
 use std::str::FromStr;
 use thiserror::Error;
 
@@ -35,6 +37,9 @@ pub enum CadastroErro {
     /// ou seja, que não segue as regras para criação de um [`Nome`].
     #[error("Houve um erro ao processar o nome")]
     ErroDeNome(#[from] NomeErro),
+
+    #[error("Houve um erro ao tentar criar os IDs do Samba")]
+    ErroSamba,
 }
 
 /// Representa as informações sobre o cadastro de um usuário no LDAP.
@@ -100,6 +105,68 @@ where
     ret
 }
 
+async fn samba_ids(ldap: &mut Ldap) -> Result<(String, String), CadastroErro> {
+    let (ids_s, _) = ldap
+        .search(
+            "dc=dcc,dc=ufrj,dc=br",
+            Scope::OneLevel,
+            "(objectClass=sambaDomain)",
+            vec!["uidNumber", "sambaNextRid"],
+        )
+        .await?
+        .success()?;
+
+    let Some(ids_s) = ids_s.first() else {
+        return Err(CadastroErro::ErroSamba);
+    };
+
+    // TODO: precisa desse clone?
+    let ids_s = SearchEntry::construct(ids_s.clone());
+
+    let samba_uid = ids_s
+        .attrs
+        .get("uidNumber")
+        .and_then(|x| x.first())
+        .ok_or(CadastroErro::ErroSamba)?;
+
+    let samba_rid = ids_s
+        .attrs
+        .get("sambaNextRid")
+        .and_then(|x| x.first())
+        .ok_or(CadastroErro::ErroSamba)?;
+
+    let prox_samba_uid = (samba_uid
+        .parse::<i64>()
+        .map_err(|_| CadastroErro::ErroSamba)?
+        + 1)
+    .to_string();
+    let prox_samba_rid = (samba_rid
+        .parse::<i64>()
+        .map_err(|_| CadastroErro::ErroSamba)?
+        + 1)
+    .to_string();
+
+    for _ in 1..=5 {
+        let modificacao = ldap
+            .modify(
+                &ids_s.dn,
+                vec![
+                    Mod::Delete("uidNumber", [samba_uid.as_str()].into()),
+                    Mod::Add("uidNumber", [prox_samba_uid.as_str()].into()),
+                    Mod::Delete("sambaNextRid", [samba_rid.as_str()].into()),
+                    Mod::Add("sambaNextRid", [prox_samba_rid.as_str()].into()),
+                ],
+            )
+            .await
+            .and_then(|x| x.success());
+
+        if modificacao.is_ok() {
+            return Ok((prox_samba_uid, prox_samba_rid));
+        }
+    }
+    Err(CadastroErro::ErroSamba)
+}
+
 async fn consulta_dre(
     dre: &str,
     ldap: &mut Ldap,
@@ -120,6 +187,7 @@ async fn consulta_dre(
         return Ok(None);
     };
 
+    // TODO: precisa desse clone?
     let dre_s = SearchEntry::construct(dre_s.clone());
     let uid = dre_s
         .attrs
