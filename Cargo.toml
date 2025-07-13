@@ -24,4 +24,6 @@ regex = "1"
 email_address = "0.2"
 secrecy = { version = "0.10", features = ["serde"] }
 zeroize = "1.8"
+directories = "6"
+config = "0.15"
 

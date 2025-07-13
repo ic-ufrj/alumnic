@@ -62,8 +62,11 @@ pub enum Cadastro {
 pub async fn consultar_cadastro_ldap(
     dre: &str,
     nome: &str,
+    ldap_url: &str,
+    bind_dn: &str,
+    bind_pw: &str,
 ) -> Result<Cadastro, CadastroErro> {
-    rodar_ldap(|mut ldap| async move {
+    rodar_ldap(ldap_url, bind_dn, bind_pw, |mut ldap| async move {
         match consulta_dre(dre, &mut ldap).await {
             Err(err) => (Err(err), ldap),
             Ok(Some(uid)) => (Ok(Cadastro::CadastroRedundante(uid)), ldap),
@@ -76,21 +79,19 @@ pub async fn consultar_cadastro_ldap(
     .await
 }
 
-async fn rodar_ldap<T, F, Fut>(f: F) -> Result<T, CadastroErro>
+async fn rodar_ldap<T, F, Fut>(
+    url: &str,
+    bind_dn: &str,
+    bind_pw: &str,
+    f: F,
+) -> Result<T, CadastroErro>
 where
     F: FnOnce(Ldap) -> Fut,
     Fut: Future<Output = (Result<T, CadastroErro>, Ldap)>,
 {
-    let bind_dn = std::env::var("LDAP_BIND_DN")
-        .expect("Por favor forneça uma variável LDAP_BIND_DN");
-    let bind_pw = std::env::var("LDAP_BIND_PW")
-        .expect("Por favor forneça uma variável LDAP_BIND_PW");
-    let url = std::env::var("LDAP_URL")
-        .expect("Por favor forneça uma variável LDAP_URL");
-
-    let (conn, mut ldap) = LdapConnAsync::new(&url).await?;
+    let (conn, mut ldap) = LdapConnAsync::new(url).await?;
     ldap3::drive!(conn);
-    ldap.simple_bind(&bind_dn, &bind_pw).await?.success()?;
+    ldap.simple_bind(bind_dn, bind_pw).await?.success()?;
 
     let (ret, mut ldap) = f(ldap).await;
 

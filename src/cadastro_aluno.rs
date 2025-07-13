@@ -77,7 +77,12 @@ pub enum ErroDeCadastro {
 }
 
 impl DadosParaCadastro {
-    pub async fn cadastrar(mut self) -> Result<String, ErroDeCadastro> {
+    pub async fn cadastrar(
+        mut self,
+        ldap_url: &str,
+        ldap_bind_dn: &str,
+        ldap_bind_pw: &str,
+    ) -> Result<String, ErroDeCadastro> {
         self.dre = processar_dre(&self.dre)
             .ok_or_else(move || ErroDeCadastro::DREInvalido(self.dre))?;
         self.data = processar_data(&self.data)
@@ -101,7 +106,13 @@ impl DadosParaCadastro {
         // Faz a consulta no SIGA e no LDAP ao mesmo tempo
         let (consulta_siga, consulta_ldap) = tokio::join!(
             consulta(&self.dre, &self.data, &self.hora, &self.codigo),
-            consultar_cadastro_ldap(&self.dre, &self.nome),
+            consultar_cadastro_ldap(
+                &self.dre,
+                &self.nome,
+                ldap_url,
+                ldap_bind_dn,
+                ldap_bind_pw
+            ),
         );
 
         let uid_ldap = match consulta_ldap? {

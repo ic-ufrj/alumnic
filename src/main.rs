@@ -1,3 +1,4 @@
+use alumnic::configuracao::Configuracao;
 use clap::{Parser, Subcommand};
 use std::error::Error;
 
@@ -26,6 +27,8 @@ enum Comandos {
 async fn main() -> Result<(), Box<dyn Error>> {
     let cli = Cli::parse();
 
+    let cfg = Configuracao::importar()?;
+
     match &cli.comando {
         Comandos::Matricula {
             dre,
@@ -38,7 +41,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
             println!("{r:?}");
         },
         Comandos::Registro { dre, nome } => {
-            let r = alumnic::ldap::consultar_cadastro_ldap(dre, nome).await?;
+            let r = alumnic::ldap::consultar_cadastro_ldap(
+                dre,
+                nome,
+                &cfg.ldap_url,
+                &cfg.ldap_bind_dn,
+                &cfg.ldap_bind_pw,
+            )
+            .await?;
             println!("{r:?}");
         },
     }
