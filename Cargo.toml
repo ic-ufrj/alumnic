@@ -26,4 +26,11 @@ secrecy = { version = "0.10", features = ["serde"] }
 zeroize = "1.8"
 directories = "6"
 config = "0.15"
+deunicode = "1.6"
+md4 = "0.10"
+encoding = "0.2"
+hex = "0.4"
+rand = "0.9"
+sha1 = "0.10"
+base64 = "0.22"
 

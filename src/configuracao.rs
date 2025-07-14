@@ -8,6 +8,19 @@ pub struct Configuracao {
     pub ldap_url: String,
     pub ldap_bind_dn: String,
     pub ldap_bind_pw: String,
+
+    pub usuario_novo: ConfiguracaoUsuario,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ConfiguracaoUsuario {
+    pub gid_number: String,
+    pub samba_sid_prefix: String,
+    pub samba_acct_flags: String,
+    pub samba_lm_password: String,
+    pub samba_password_history: String,
+    pub samba_primary_group_sid: String,
+    pub cota: String,
 }
 
 #[derive(Debug, Error)]
