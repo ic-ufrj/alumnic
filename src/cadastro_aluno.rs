@@ -29,9 +29,8 @@ pub struct DadosParaCadastro {
     /// pequenas como a existência ou não de um "de" e adição de acentos são
     /// válidas, mas qualquer mudança nas letras não é.
     ///
-    /// Para fazer essa verificação, é usado o
-    /// [`Nome`](crate::utils::nome::Nome), mais informações sobre essa
-    /// comparação podem ser encontrados na documentação desse tipo.
+    /// Para fazer essa verificação, é usado o [`Nome`], mais informações sobre
+    /// essa comparação podem ser encontrados na documentação desse tipo.
     pub nome: String,
     /// O email externo. Precisa ser um email válido.
     pub email: String,
