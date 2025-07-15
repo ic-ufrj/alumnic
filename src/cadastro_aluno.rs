@@ -1,8 +1,9 @@
 //! Módulo com os tipos e funções necessárias para o cadastro de um aluno novo.
-use crate::ldap::{Cadastro, CadastroErro, consultar_cadastro_ldap};
+use crate::ldap::{Cadastro, CadastroErro, consultar_cadastro_ldap, cadastrar_usuario};
 use crate::portal_ufrj::{Consulta, ConsultaErro, consulta};
 use crate::utils::nome::Nome;
 use crate::utils::validacao_entradas::*;
+use crate::configuracao::ConfiguracaoUsuario;
 use secrecy::SecretString;
 use serde::Deserialize;
 use thiserror::Error;
@@ -76,20 +77,16 @@ pub enum ErroDeCadastro {
 }
 
 impl DadosParaCadastro {
-    pub async fn cadastrar(
+    pub async fn cadastrar_sem_verificar_documento(
         mut self,
+        uid: String,
+        config: &ConfiguracaoUsuario,
         ldap_url: &str,
         ldap_bind_dn: &str,
         ldap_bind_pw: &str,
-    ) -> Result<String, ErroDeCadastro> {
+    ) -> Result<(), ErroDeCadastro> {
         self.dre = processar_dre(&self.dre)
             .ok_or_else(move || ErroDeCadastro::DREInvalido(self.dre))?;
-        self.data = processar_data(&self.data)
-            .ok_or_else(move || ErroDeCadastro::DataInvalida(self.data))?;
-        self.hora = processar_hora(&self.hora)
-            .ok_or_else(move || ErroDeCadastro::HoraInvalida(self.hora))?;
-        self.codigo = processar_codigo(&self.codigo)
-            .ok_or_else(move || ErroDeCadastro::CodigoInvalido(self.codigo))?;
         self.nome = processar_nome(&self.nome)
             .ok_or_else(move || ErroDeCadastro::NomeInvalido(self.nome))?;
         self.email = processar_email(&self.email)
@@ -101,6 +98,32 @@ impl DadosParaCadastro {
         validar_senha(&self.senha)
             .then_some(())
             .ok_or(ErroDeCadastro::SenhaInvalida)?;
+
+        cadastrar_usuario(
+            Cadastro::CadastroDisponivel(uid),
+            &self,
+            config,
+            ldap_url,
+            ldap_bind_dn,
+            ldap_bind_pw,
+        ).await?;
+
+        Ok(())
+    }
+
+    pub async fn cadastrar(
+        mut self,
+        config: &ConfiguracaoUsuario,
+        ldap_url: &str,
+        ldap_bind_dn: &str,
+        ldap_bind_pw: &str,
+    ) -> Result<String, ErroDeCadastro> {
+        self.data = processar_data(&self.data)
+            .ok_or_else(move || ErroDeCadastro::DataInvalida(self.data))?;
+        self.hora = processar_hora(&self.hora)
+            .ok_or_else(move || ErroDeCadastro::HoraInvalida(self.hora))?;
+        self.codigo = processar_codigo(&self.codigo)
+            .ok_or_else(move || ErroDeCadastro::CodigoInvalido(self.codigo))?;
 
         // Faz a consulta no SIGA e no LDAP ao mesmo tempo
         let (consulta_siga, consulta_ldap) = tokio::join!(
@@ -132,13 +155,18 @@ impl DadosParaCadastro {
         // Verifica se o nome é o mesmo do SIGA
         if self.nome.parse::<Nome>() != nome_siga.parse() {
             Err(ErroDeCadastro::NomesDiferentes {
-                informado: self.nome,
+                informado: self.nome.clone(),
                 siga: nome_siga,
             })?
         }
 
-        // TODO: cadastrar no LDAP
-        todo!();
+        self.cadastrar_sem_verificar_documento(
+            uid_ldap.clone(),
+            config,
+            ldap_url,
+            ldap_bind_dn,
+            ldap_bind_pw,
+        ).await?;
 
         Ok(uid_ldap)
     }

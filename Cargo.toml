@@ -33,4 +33,5 @@ hex = "0.4"
 rand = "0.9"
 sha1 = "0.10"
 base64 = "0.22"
+dialoguer = "0.11"
 
