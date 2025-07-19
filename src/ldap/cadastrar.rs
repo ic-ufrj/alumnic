@@ -1,6 +1,7 @@
 use crate::cadastro_aluno::DadosParaCadastro;
 use crate::configuracao::ConfiguracaoUsuario;
-use crate::ldap::{Cadastro, CadastroErro, rodar_ldap};
+use crate::ldap::ErroLdap;
+use crate::ldap::utils::rodar_ldap;
 use crate::utils::hashes::{hash_nt, hash_ssha};
 use chrono::Utc;
 use deunicode::deunicode;
@@ -12,29 +13,20 @@ use secrecy::ExposeSecret;
 // retornará um erro, o que não é algo crítico, só seria necessário que o
 // usuário tente novamente. Como é um caso extremamente excepcional, não acho
 // que isso seja um problema.
-//
-// TODO: anotar que dá panic quando o cadastro n é disponivel
 pub async fn cadastrar_usuario(
-    cadastro: Cadastro,
+    username: String,
     dados: &DadosParaCadastro,
     cfg: &ConfiguracaoUsuario,
     ldap_url: &str,
     bind_dn: &str,
     bind_pw: &str,
-) -> Result<(), CadastroErro> {
+) -> Result<(), ErroLdap> {
     async fn cadastrar(
-        cadastro: Cadastro,
+        username: String,
         dados: &DadosParaCadastro,
         cfg: &ConfiguracaoUsuario,
         ldap: &mut Ldap,
-    ) -> Result<(), CadastroErro> {
-        let username = match cadastro {
-            Cadastro::CadastroDisponivel(uid) => uid,
-            Cadastro::CadastroRedundante(..) => {
-                panic!("Cadastro precisa estar disponível!")
-            },
-        };
-
+    ) -> Result<(), ErroLdap> {
         let (samba_uid, samba_rid) = samba_ids(ldap).await?;
 
         let dn = format!(
@@ -150,12 +142,12 @@ pub async fn cadastrar_usuario(
     }
 
     rodar_ldap(ldap_url, bind_dn, bind_pw, |mut ldap| async move {
-        (cadastrar(cadastro, dados, cfg, &mut ldap).await, ldap)
+        (cadastrar(username, dados, cfg, &mut ldap).await, ldap)
     })
     .await
 }
 
-async fn samba_ids(ldap: &mut Ldap) -> Result<(String, String), CadastroErro> {
+async fn samba_ids(ldap: &mut Ldap) -> Result<(String, String), ErroLdap> {
     let (ids_s, _) = ldap
         .search(
             "dc=dcc,dc=ufrj,dc=br",
@@ -167,7 +159,7 @@ async fn samba_ids(ldap: &mut Ldap) -> Result<(String, String), CadastroErro> {
         .success()?;
 
     let Some(ids_s) = ids_s.first() else {
-        return Err(CadastroErro::ErroSamba);
+        return Err(ErroLdap::ErroSamba);
     };
 
     // TODO: precisa desse clone?
@@ -177,24 +169,20 @@ async fn samba_ids(ldap: &mut Ldap) -> Result<(String, String), CadastroErro> {
         .attrs
         .get("uidNumber")
         .and_then(|x| x.first())
-        .ok_or(CadastroErro::ErroSamba)?;
+        .ok_or(ErroLdap::ErroSamba)?;
 
     let samba_rid = ids_s
         .attrs
         .get("sambaNextRid")
         .and_then(|x| x.first())
-        .ok_or(CadastroErro::ErroSamba)?;
+        .ok_or(ErroLdap::ErroSamba)?;
 
-    let prox_samba_uid = (samba_uid
-        .parse::<i64>()
-        .map_err(|_| CadastroErro::ErroSamba)?
-        + 1)
-    .to_string();
-    let prox_samba_rid = (samba_rid
-        .parse::<i64>()
-        .map_err(|_| CadastroErro::ErroSamba)?
-        + 1)
-    .to_string();
+    let prox_samba_uid =
+        (samba_uid.parse::<i64>().map_err(|_| ErroLdap::ErroSamba)? + 1)
+            .to_string();
+    let prox_samba_rid =
+        (samba_rid.parse::<i64>().map_err(|_| ErroLdap::ErroSamba)? + 1)
+            .to_string();
 
     for _ in 1..=5 {
         let modificacao = ldap
@@ -214,5 +202,5 @@ async fn samba_ids(ldap: &mut Ldap) -> Result<(String, String), CadastroErro> {
             return Ok((prox_samba_uid, prox_samba_rid));
         }
     }
-    Err(CadastroErro::ErroSamba)
+    Err(ErroLdap::ErroSamba)
 }

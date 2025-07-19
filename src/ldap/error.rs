@@ -4,7 +4,7 @@ use thiserror::Error;
 
 /// Representa um erro ao tentar cadastrar um usuário.
 #[derive(Debug, Error)]
-pub enum CadastroErro {
+pub enum ErroLdap {
     /// Um problema com a conexão com o LDAP. Pode ser um problema de rede ou
     /// um problema com as operações feitas no LDAP. Para saber, acesse a
     /// estrutura [`LdapError`].
@@ -38,13 +38,4 @@ pub enum CadastroErro {
     ErroSamba,
 }
 
-/// Representa as informações sobre o cadastro de um usuário no LDAP.
-#[derive(Debug)]
-pub enum Cadastro {
-    /// O cadastro pode ser feito com sucesso e a string representa o
-    /// uid/sername do usuário que deve ser criado.
-    CadastroDisponivel(String),
-    /// O cadastro já existia antes. A string representa o username/uid do
-    /// usuário **que já estava cadastrado**.
-    CadastroRedundante(String),
-}
+pub type Result<T> = std::result::Result<T, ErroLdap>;

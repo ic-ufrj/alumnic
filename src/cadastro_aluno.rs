@@ -1,9 +1,13 @@
 //! Módulo com os tipos e funções necessárias para o cadastro de um aluno novo.
-use crate::ldap::{Cadastro, CadastroErro, consultar_cadastro_ldap, cadastrar_usuario};
+use crate::configuracao::ConfiguracaoUsuario;
+use crate::ldap::ErroLdap;
+use crate::ldap::cadastrar::cadastrar_usuario;
+use crate::ldap::consulta::{
+    Consulta as ConsultaLdap, consultar_cadastro_ldap,
+};
 use crate::portal_ufrj::{Consulta, ConsultaErro, consulta};
 use crate::utils::nome::Nome;
 use crate::utils::validacao_entradas::*;
-use crate::configuracao::ConfiguracaoUsuario;
 use secrecy::SecretString;
 use serde::Deserialize;
 use thiserror::Error;
@@ -68,7 +72,7 @@ pub enum ErroDeCadastro {
     DocumentoInvalido,
 
     #[error("houve um problema ao verificar o estado do cadastro no LDAP")]
-    ErroNoCadastro(#[from] CadastroErro),
+    ErroNoCadastro(#[from] ErroLdap),
     #[error("o cadastro já existe, com o username {0}")]
     CadastroRedundante(String),
 
@@ -100,13 +104,14 @@ impl DadosParaCadastro {
             .ok_or(ErroDeCadastro::SenhaInvalida)?;
 
         cadastrar_usuario(
-            Cadastro::CadastroDisponivel(uid),
+            uid,
             &self,
             config,
             ldap_url,
             ldap_bind_dn,
             ldap_bind_pw,
-        ).await?;
+        )
+        .await?;
 
         Ok(())
     }
@@ -138,8 +143,8 @@ impl DadosParaCadastro {
         );
 
         let uid_ldap = match consulta_ldap? {
-            Cadastro::CadastroDisponivel(uid) => uid,
-            Cadastro::CadastroRedundante(uid) => {
+            ConsultaLdap::CadastroDisponivel(uid) => uid,
+            ConsultaLdap::CadastroRedundante(uid) => {
                 Err(ErroDeCadastro::CadastroRedundante(uid))?
             },
         };
@@ -166,7 +171,8 @@ impl DadosParaCadastro {
             ldap_url,
             ldap_bind_dn,
             ldap_bind_pw,
-        ).await?;
+        )
+        .await?;
 
         Ok(uid_ldap)
     }

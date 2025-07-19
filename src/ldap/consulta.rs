@@ -1,6 +1,18 @@
-use crate::ldap::{Cadastro, CadastroErro, rodar_ldap};
+use crate::ldap::ErroLdap;
+use crate::ldap::utils::rodar_ldap;
 use crate::utils::nome::Nome;
 use ldap3::{Ldap, Scope, SearchEntry, ldap_escape};
+
+/// Representa as informações sobre o cadastro de um usuário no LDAP.
+#[derive(Debug)]
+pub enum Consulta {
+    /// O cadastro pode ser feito com sucesso e a string representa o
+    /// uid/sername do usuário que deve ser criado.
+    CadastroDisponivel(String),
+    /// O cadastro já existia antes. A string representa o username/uid do
+    /// usuário **que já estava cadastrado**.
+    CadastroRedundante(String),
+}
 
 /// Consulta se um usuário já está cadastrado no LDAP a partir da DRE e, se ele
 /// não estiver, acha um uid/username disponível para ele. Se ele estiver, diz
@@ -12,21 +24,21 @@ use ldap3::{Ldap, Scope, SearchEntry, ldap_escape};
 /// consiga achar o uid que o usuário tem, caso não consiga gerar um username
 /// válido ou caso o nome do usuário não seja válido.
 ///
-/// Mais informações em [CadastroErro]
+/// Mais informações em [ErroLdap]
 pub async fn consultar_cadastro_ldap(
     dre: &str,
     nome: &str,
     ldap_url: &str,
     bind_dn: &str,
     bind_pw: &str,
-) -> Result<Cadastro, CadastroErro> {
+) -> Result<Consulta, ErroLdap> {
     rodar_ldap(ldap_url, bind_dn, bind_pw, |mut ldap| async move {
         match consulta_dre(dre, &mut ldap).await {
             Err(err) => (Err(err), ldap),
-            Ok(Some(uid)) => (Ok(Cadastro::CadastroRedundante(uid)), ldap),
+            Ok(Some(uid)) => (Ok(Consulta::CadastroRedundante(uid)), ldap),
             Ok(None) => match achar_nome_livre(nome, &mut ldap).await {
                 Err(err) => (Err(err), ldap),
-                Ok(uid) => (Ok(Cadastro::CadastroDisponivel(uid)), ldap),
+                Ok(uid) => (Ok(Consulta::CadastroDisponivel(uid)), ldap),
             },
         }
     })
@@ -36,7 +48,7 @@ pub async fn consultar_cadastro_ldap(
 async fn consulta_dre(
     dre: &str,
     ldap: &mut Ldap,
-) -> Result<Option<String>, CadastroErro> {
+) -> Result<Option<String>, ErroLdap> {
     let search_dre = format!("(dre={})", ldap_escape(dre));
 
     let (dre_s, _) = ldap
@@ -58,9 +70,9 @@ async fn consulta_dre(
     let uid = dre_s
         .attrs
         .get("uid")
-        .ok_or(CadastroErro::FalhaUid)?
+        .ok_or(ErroLdap::FalhaUid)?
         .first()
-        .ok_or(CadastroErro::FalhaUid)?;
+        .ok_or(ErroLdap::FalhaUid)?;
 
     Ok(Some(uid.to_string()))
 }
@@ -68,19 +80,19 @@ async fn consulta_dre(
 async fn achar_nome_livre(
     nome: &str,
     ldap: &mut Ldap,
-) -> Result<String, CadastroErro> {
+) -> Result<String, ErroLdap> {
     for username in nome.parse::<Nome>()?.usernames() {
         if !consulta_usuario_existe(&username, ldap).await? {
             return Ok(username);
         }
     }
-    Err(CadastroErro::UsuarioDificil)
+    Err(ErroLdap::UsuarioDificil)
 }
 
 async fn consulta_usuario_existe(
     username: &str,
     ldap: &mut Ldap,
-) -> Result<bool, CadastroErro> {
+) -> Result<bool, ErroLdap> {
     let search_username = format!("(uid={})", ldap_escape(username));
 
     let (username_s, _) = ldap

@@ -1,4 +1,4 @@
-use crate::ldap::CadastroErro;
+use crate::ldap::ErroLdap;
 use ldap3::{Ldap, LdapConnAsync};
 
 pub async fn rodar_ldap<T, F, Fut>(
@@ -6,10 +6,10 @@ pub async fn rodar_ldap<T, F, Fut>(
     bind_dn: &str,
     bind_pw: &str,
     f: F,
-) -> Result<T, CadastroErro>
+) -> Result<T, ErroLdap>
 where
     F: FnOnce(Ldap) -> Fut,
-    Fut: Future<Output = (Result<T, CadastroErro>, Ldap)>,
+    Fut: Future<Output = (Result<T, ErroLdap>, Ldap)>,
 {
     let (conn, mut ldap) = LdapConnAsync::new(url).await?;
     ldap3::drive!(conn);

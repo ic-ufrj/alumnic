@@ -1,9 +1,10 @@
-use alumnic::configuracao::Configuracao;
 use alumnic::cadastro_aluno::DadosParaCadastro;
+use alumnic::configuracao::Configuracao;
+use alumnic::ldap::consulta::consultar_cadastro_ldap;
 use clap::{Parser, Subcommand};
-use std::error::Error;
-use dialoguer::{theme::ColorfulTheme, Password};
+use dialoguer::{Password, theme::ColorfulTheme};
 use secrecy::SecretString;
+use std::error::Error;
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -30,7 +31,7 @@ enum Comandos {
         nome: String,
         email: String,
         telefone: String,
-    }
+    },
 }
 
 #[tokio::main]
@@ -46,12 +47,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
             hora,
             codigo,
         } => {
-            let r =
-                alumnic::portal_ufrj::consulta(&dre, &data, &hora, &codigo).await?;
+            let r = alumnic::portal_ufrj::consulta(&dre, &data, &hora, &codigo)
+                .await?;
             println!("{r:?}");
         },
         Comandos::Registro { dre, nome } => {
-            let r = alumnic::ldap::consultar_cadastro_ldap(
+            let r = consultar_cadastro_ldap(
                 &dre,
                 &nome,
                 &cfg.ldap_url,
@@ -61,13 +62,20 @@ async fn main() -> Result<(), Box<dyn Error>> {
             .await?;
             println!("{r:?}");
         },
-        Comandos::NovoAluno { username, dre, nome, email, telefone } => {
-            let senha: SecretString = Password::with_theme(&ColorfulTheme::default())
-                .with_prompt("Senha")
-                .with_confirmation("Confirmar senha", "Senhas diferentes")
-                .interact()
-                .unwrap()
-                .into();
+        Comandos::NovoAluno {
+            username,
+            dre,
+            nome,
+            email,
+            telefone,
+        } => {
+            let senha: SecretString =
+                Password::with_theme(&ColorfulTheme::default())
+                    .with_prompt("Senha")
+                    .with_confirmation("Confirmar senha", "Senhas diferentes")
+                    .interact()
+                    .unwrap()
+                    .into();
 
             let dados = DadosParaCadastro {
                 dre,
@@ -80,14 +88,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 senha,
             };
 
-            dados.cadastrar_sem_verificar_documento(
-                username,
-                &cfg.usuario_novo,
-                &cfg.ldap_url,
-                &cfg.ldap_bind_dn,
-                &cfg.ldap_bind_pw,
-            ).await?;
-        }
+            dados
+                .cadastrar_sem_verificar_documento(
+                    username,
+                    &cfg.usuario_novo,
+                    &cfg.ldap_url,
+                    &cfg.ldap_bind_dn,
+                    &cfg.ldap_bind_pw,
+                )
+                .await?;
+        },
     }
 
     Ok(())
