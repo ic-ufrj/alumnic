@@ -1,3 +1,4 @@
+//! Tipos de erro do módulo de contato com o LDAP.
 use crate::utils::nome::NomeErro;
 use ldap3::LdapError;
 use thiserror::Error;
@@ -38,4 +39,6 @@ pub enum ErroLdap {
     ErroSamba,
 }
 
+/// Variação do [std::result::Result] para o [ErroLdap].
 pub type Result<T> = std::result::Result<T, ErroLdap>;
+

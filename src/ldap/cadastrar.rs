@@ -1,3 +1,5 @@
+//! Módulo com funções relacionadas ao cadastro de um aluno no sistema já tendo
+//! o username.
 use crate::cadastro_aluno::DadosParaCadastro;
 use crate::configuracao::ConfiguracaoUsuario;
 use crate::ldap::ErroLdap;
@@ -8,11 +10,19 @@ use deunicode::deunicode;
 use ldap3::{Ldap, Mod, Scope, SearchEntry, dn_escape};
 use secrecy::ExposeSecret;
 
-// TODO: documentar que é possível que uma race condition aconteça caso dois
-// usuários disputem um mesmo username ao mesmo tempo, mas nesse caso, o LDAP
-// retornará um erro, o que não é algo crítico, só seria necessário que o
-// usuário tente novamente. Como é um caso extremamente excepcional, não acho
-// que isso seja um problema.
+// TODO: embora o LDAP dê erro se tiver dois alunos com o msm nome, talvez n de
+// se tiver um aluno e professor, por exemplo. Isso deve ser verificado após a
+// adição e ela deve ser cancelada caso aconteça. Isso deve ser muito raro de
+// ocorrer, pois precisaria da adição simultanea, ou seja, provavelmente nunca
+// vai acontecer. Mas é bom ter algo para esse caso.
+/// Cadastra um usuário com os dados fornecidos, a partir da configuração base
+/// fornecida.
+///
+/// # Errors
+///
+/// - conflito de username, ou seja, já existir um aluno com o mesmo username;
+/// - erro de conexão do LDAP; ou
+/// - [DadosParaCadastro] não sanitizados.
 pub async fn cadastrar_usuario(
     username: String,
     dados: &DadosParaCadastro,
@@ -27,6 +37,7 @@ pub async fn cadastrar_usuario(
         cfg: &ConfiguracaoUsuario,
         ldap: &mut Ldap,
     ) -> Result<(), ErroLdap> {
+        // TODO: remover coisas do samba
         let (samba_uid, samba_rid) = samba_ids(ldap).await?;
 
         let dn = format!(

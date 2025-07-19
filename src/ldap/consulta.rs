@@ -1,3 +1,5 @@
+//! Módulo para consulta de um username disponível para um usuário novo no LDAP,
+//! além de verificar se um usuário com a DRE já existe.
 use crate::ldap::ErroLdap;
 use crate::ldap::utils::rodar_ldap;
 use crate::utils::nome::Nome;
@@ -7,7 +9,7 @@ use ldap3::{Ldap, Scope, SearchEntry, ldap_escape};
 #[derive(Debug)]
 pub enum Consulta {
     /// O cadastro pode ser feito com sucesso e a string representa o
-    /// uid/sername do usuário que deve ser criado.
+    /// uid/username do usuário que deve ser criado.
     CadastroDisponivel(String),
     /// O cadastro já existia antes. A string representa o username/uid do
     /// usuário **que já estava cadastrado**.
