@@ -18,7 +18,7 @@ use thiserror::Error;
 /// `data_emissao`, `hora_emissao` e `codigo` são dados contidos no documento
 /// "Regularmente Matriculado" disponível no SIGA, que é autenticado pelo
 /// programa. O `nome` deve ser o mesmo do SIGA.
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct DadosParaCadastro {
     /// O DRE, somente números, 9 dígitos.
     pub dre: String,

@@ -15,6 +15,9 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Comandos {
+    Serve {
+        endereco: String,
+    },
     Matricula {
         dre: String,
         data: String,
@@ -41,6 +44,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let cfg = Configuracao::importar()?;
 
     match cli.comando {
+        Comandos::Serve { endereco } => {
+            alumnic::api::main(endereco).await;
+        },
         Comandos::Matricula {
             dre,
             data,

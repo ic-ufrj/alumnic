@@ -1,3 +1,4 @@
+pub mod api;
 pub mod cadastro_aluno;
 pub mod configuracao;
 pub mod ldap;

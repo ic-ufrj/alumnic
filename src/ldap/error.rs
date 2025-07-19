@@ -41,4 +41,3 @@ pub enum ErroLdap {
 
 /// Variação do [std::result::Result] para o [ErroLdap].
 pub type Result<T> = std::result::Result<T, ErroLdap>;
-
