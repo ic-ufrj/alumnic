@@ -3,7 +3,7 @@ use directories::ProjectDirs;
 use serde::Deserialize;
 use thiserror::Error;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Configuracao {
     pub ldap_url: String,
     pub ldap_bind_dn: String,
@@ -12,7 +12,7 @@ pub struct Configuracao {
     pub usuario_novo: ConfiguracaoUsuario,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct ConfiguracaoUsuario {
     pub gid_number: String,
     pub samba_sid_prefix: String,

@@ -8,6 +8,7 @@ use crate::ldap::consulta::{
 use crate::portal_ufrj::{Consulta, ConsultaErro, consulta};
 use crate::utils::nome::Nome;
 use crate::utils::validacao_entradas::*;
+use axum::http::StatusCode;
 use secrecy::SecretString;
 use serde::Deserialize;
 use thiserror::Error;
@@ -47,37 +48,63 @@ pub struct DadosParaCadastro {
 
 #[derive(Debug, Error)]
 pub enum ErroDeCadastro {
-    #[error("o DRE {0} não é válido")]
+    #[error("O DRE {0:?} não é válido")]
     DREInvalido(String),
-    #[error("a data {0} não é válido")]
+    #[error("A data {0:?} não é válida")]
     DataInvalida(String),
-    #[error("a hora {0} não é válido")]
+    #[error("A hora {0:?} não é válida")]
     HoraInvalida(String),
-    #[error("o código {0} não é válido")]
+    #[error("O código {0:?} não é válido")]
     CodigoInvalido(String),
-    #[error("o nome {0} não é válido")]
+    #[error("O nome {0:?} não é válido")]
     NomeInvalido(String),
-    #[error("o email {0} não é válido")]
+    #[error("O email {0:?} não é válido")]
     EmailInvalido(String),
-    #[error("o telefone {0} não é válido")]
+    #[error("O telefone {0:?} não é válido")]
     TelefoneInvalido(String),
-    #[error("a senha precisa ter entre 6 e 32 caracteres")]
+    // TODO: mudar verificacao da senha
+    #[error("A senha precisa ter entre 8 e 25 caracteres")]
     SenhaInvalida,
 
-    #[error("não foi possível obter informações do SIGA")]
+    #[error("Não foi possível obter informações do SIGA")]
     ErroNaConsulta(#[from] ConsultaErro),
-    #[error("alunos de {0} não têm direito à conta do IC")]
+    #[error("Alunos de {0} não têm direito à conta do IC")]
     AlunoOutroCurso(String),
-    #[error("seu documento de matrícula é inválido")]
+    #[error("Seu documento de matrícula é inválido")]
     DocumentoInvalido,
 
-    #[error("houve um problema ao verificar o estado do cadastro no LDAP")]
+    #[error("Houve um problema ao verificar o estado do cadastro no LDAP")]
     ErroNoCadastro(#[from] ErroLdap),
-    #[error("o cadastro já existe, com o username {0}")]
+    #[error("O cadastro já existe, com o username {0:?}")]
     CadastroRedundante(String),
 
-    #[error("O nome informado {informado} não é o mesmo do SIGA {siga}")]
+    #[error("O nome informado {informado:?} não é o mesmo do SIGA {siga:?}")]
     NomesDiferentes { informado: String, siga: String },
+}
+
+impl ErroDeCadastro {
+    pub fn status(&self) -> StatusCode {
+        match self {
+            ErroDeCadastro::DREInvalido(..)
+            | ErroDeCadastro::DataInvalida(..)
+            | ErroDeCadastro::HoraInvalida(..)
+            | ErroDeCadastro::CodigoInvalido(..)
+            | ErroDeCadastro::NomeInvalido(..)
+            | ErroDeCadastro::EmailInvalido(..)
+            | ErroDeCadastro::TelefoneInvalido(..)
+            | ErroDeCadastro::SenhaInvalida
+            | ErroDeCadastro::NomesDiferentes { .. } => {
+                StatusCode::UNPROCESSABLE_ENTITY
+            },
+            ErroDeCadastro::AlunoOutroCurso(..)
+            | ErroDeCadastro::DocumentoInvalido => StatusCode::FORBIDDEN,
+            ErroDeCadastro::ErroNaConsulta(..)
+            | ErroDeCadastro::ErroNoCadastro(..) => {
+                StatusCode::INTERNAL_SERVER_ERROR
+            },
+            ErroDeCadastro::CadastroRedundante(..) => StatusCode::CONFLICT,
+        }
+    }
 }
 
 impl DadosParaCadastro {

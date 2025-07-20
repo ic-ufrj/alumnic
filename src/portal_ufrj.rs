@@ -76,8 +76,7 @@ pub async fn consulta(
 
     let res_form = client.get(GET_URL).send().await?.text().await?;
 
-    let form_doc = Document::from(res_form.as_str());
-    let view_state = form_doc
+    let view_state = Document::from(res_form.as_str())
         .find(Attr("name", "javax.faces.ViewState"))
         .next()
         .and_then(|v| v.attr("value"))

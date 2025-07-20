@@ -5,6 +5,7 @@ use clap::{Parser, Subcommand};
 use dialoguer::{Password, theme::ColorfulTheme};
 use secrecy::SecretString;
 use std::error::Error;
+use std::sync::Arc;
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -45,7 +46,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     match cli.comando {
         Comandos::Serve { endereco } => {
-            alumnic::api::main(endereco).await;
+            alumnic::api::main(endereco, Arc::new(cfg)).await;
         },
         Comandos::Matricula {
             dre,
