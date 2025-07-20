@@ -31,7 +31,7 @@ async fn cadastrar(
             ).await {
                 Ok(username) => {
                     (
-                        StatusCode::OK,
+                        StatusCode::CREATED,
                         Json(ResponseBody {
                             message: format!(
                                 "Cadastrado como {username:?} com sucesso",
