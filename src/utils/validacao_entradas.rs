@@ -7,7 +7,6 @@ use crate::utils::nome::Nome;
 use email_address::EmailAddress;
 use regex::Regex;
 use secrecy::{ExposeSecret, SecretString};
-use zeroize::Zeroize;
 
 /// Processa um DRE, retornando uma versão "limpa" dele caso a entrada seja
 /// válida e None caso a entrada não represente um DRE válido.
@@ -399,12 +398,21 @@ pub fn processar_telefone(telefone: &str) -> Option<String> {
         .map(|caps| format!("+55{}{}{}", &caps[1], &caps[2], &caps[3]))
 }
 
-/// Valida uma senha, representada com as funções da biblioteca [secrecy]. As
-/// informações retiradas da senha são devidamente zeradas da memória.
+/// Valida uma senha representada com os tipos da biblioteca [secrecy].
+///
+/// As condições para uma senha ser válida são:
+///
+/// - ter ao menos 8 caracteres;
+/// - ter no máximo 25 caracteres;
+/// - ter ao menos uma letra minúscula;
+/// - ter ao menos uma letra maiúscula; e
+/// - ter ao menos um dígito.
 pub fn validar_senha(senha: &SecretString) -> bool {
-    let mut l = senha.expose_secret().len();
-    let valid = l >= 6 && l <= 32;
-    l.zeroize();
+    let s = senha.expose_secret();
 
-    valid
+    s.chars().count() >= 8
+        && s.chars().count() <= 25
+        && s.chars().any(|c| c.is_ascii_lowercase())
+        && s.chars().any(|c| c.is_ascii_uppercase())
+        && s.chars().any(|c| c.is_ascii_digit())
 }

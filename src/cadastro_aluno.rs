@@ -42,7 +42,8 @@ pub struct DadosParaCadastro {
     pub email: String,
     /// O telefone. Precisa ser um telefone válido.
     pub telefone: String,
-    /// A senha. Precisa ter entre 6 e 32 caracteres.
+    /// A senha. Precisa ter entre 8 e 25 caracteres, ao menos uma letra
+    /// minúscula, maiúscula e um dígito.
     pub senha: SecretString,
 }
 
@@ -63,7 +64,7 @@ pub enum ErroDeCadastro {
     #[error("O telefone {0:?} não é válido")]
     TelefoneInvalido(String),
     // TODO: mudar verificacao da senha
-    #[error("A senha precisa ter entre 8 e 25 caracteres")]
+    #[error("A senha precisa ter entre 8 e 25 caracteres, uma letra minúscula, uma maiúscula e um dígito")]
     SenhaInvalida,
 
     #[error("Não foi possível obter informações do SIGA")]
