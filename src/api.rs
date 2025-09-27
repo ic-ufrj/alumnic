@@ -34,7 +34,7 @@ async fn cadastrar(
                         StatusCode::CREATED,
                         Json(ResponseBody {
                             message: format!(
-                                "Cadastrado como {username:?} com sucesso",
+                                "Cadastrado como {username:?} com sucesso. Sua conta de e-mail deve funcionar em até 24 horas. Seu login é {username}@dcc.ufrj.br e a senha é o seu DRE. A senha digitada nesse formulário é usada somente no login dos laboratórios.",
                             ),
                             sabar_mais: None,
                         }),
