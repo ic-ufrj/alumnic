@@ -97,8 +97,8 @@ impl ErroDeCadastro {
             | ErroDeCadastro::NomesDiferentes { .. } => {
                 StatusCode::UNPROCESSABLE_ENTITY
             },
-            ErroDeCadastro::AlunoOutroCurso(..)
-            | ErroDeCadastro::DocumentoInvalido => StatusCode::FORBIDDEN,
+            ErroDeCadastro::AlunoOutroCurso(..) => StatusCode::FORBIDDEN,
+            ErroDeCadastro::DocumentoInvalido => StatusCode::UNAUTHORIZED,
             ErroDeCadastro::ErroNaConsulta(..)
             | ErroDeCadastro::ErroNoCadastro(..) => {
                 StatusCode::INTERNAL_SERVER_ERROR
