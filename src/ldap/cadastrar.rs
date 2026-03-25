@@ -27,6 +27,7 @@ pub async fn cadastrar_usuario(
     username: String,
     dados: &DadosParaCadastro,
     cfg: &ConfiguracaoUsuario,
+    ou: &str,
     ldap_url: &str,
     bind_dn: &str,
     bind_pw: &str,
@@ -35,14 +36,15 @@ pub async fn cadastrar_usuario(
         username: String,
         dados: &DadosParaCadastro,
         cfg: &ConfiguracaoUsuario,
+        ou: &str,
         ldap: &mut Ldap,
     ) -> Result<(), ErroLdap> {
         // TODO: remover coisas do samba
         let (samba_uid, samba_rid) = samba_ids(ldap).await?;
 
         let dn = format!(
-            "uid={},ou=alunos,ou=academicos,ou=usuarios,dc=dcc,dc=ufrj,dc=br",
-            dn_escape(&username),
+            "uid={},ou={},ou=academicos,ou=usuarios,dc=dcc,dc=ufrj,dc=br",
+            dn_escape(&username), ou,
         );
 
         let hash_nt = hash_nt(&dados.senha);
@@ -153,7 +155,7 @@ pub async fn cadastrar_usuario(
     }
 
     rodar_ldap(ldap_url, bind_dn, bind_pw, |mut ldap| async move {
-        (cadastrar(username, dados, cfg, &mut ldap).await, ldap)
+        (cadastrar(username, dados, &cfg, ou, &mut ldap).await, ldap)
     })
     .await
 }

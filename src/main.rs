@@ -31,6 +31,7 @@ enum Comandos {
     },
     NovoAluno {
         username: String,
+        ou: String,
         dre: String,
         nome: String,
         email: String,
@@ -71,6 +72,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         },
         Comandos::NovoAluno {
             username,
+            ou,
             dre,
             nome,
             email,
@@ -99,6 +101,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 .cadastrar_sem_verificar_documento(
                     username,
                     &cfg.usuario_novo,
+                    &ou,
                     &cfg.ldap_url,
                     &cfg.ldap_bind_dn,
                     &cfg.ldap_bind_pw,

@@ -113,6 +113,7 @@ impl DadosParaCadastro {
         mut self,
         uid: String,
         config: &ConfiguracaoUsuario,
+        ou: &str,
         ldap_url: &str,
         ldap_bind_dn: &str,
         ldap_bind_pw: &str,
@@ -135,6 +136,7 @@ impl DadosParaCadastro {
             uid,
             &self,
             config,
+            ou,
             ldap_url,
             ldap_bind_dn,
             ldap_bind_pw,
@@ -177,13 +179,15 @@ impl DadosParaCadastro {
             },
         };
 
-        let nome_siga = match consulta_siga? {
-            Consulta::AlunoDoCurso { nome } => nome,
+        let (nome_siga, ou) = match consulta_siga? {
+            Consulta::AlunoBCC { nome } => (nome, "alunos"),
+            Consulta::AlunoProfComp { nome } => (nome, "profcomp"),
             Consulta::AlunoOutroCurso { curso, .. } => {
                 Err(ErroDeCadastro::AlunoOutroCurso(curso))?
             },
             Consulta::Desconhecido => Err(ErroDeCadastro::DocumentoInvalido)?,
         };
+
 
         // Verifica se o nome é o mesmo do SIGA
         if self.nome.parse::<Nome>() != nome_siga.parse() {
@@ -196,6 +200,7 @@ impl DadosParaCadastro {
         self.cadastrar_sem_verificar_documento(
             uid_ldap.clone(),
             config,
+            ou,
             ldap_url,
             ldap_bind_dn,
             ldap_bind_pw,

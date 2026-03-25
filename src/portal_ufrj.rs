@@ -46,7 +46,10 @@ pub enum ConsultaErro {
 pub enum Consulta {
     /// O aluno é do curso de Ciência da Computação e `nome` é seu nome
     /// completo.
-    AlunoDoCurso { nome: String },
+    AlunoBCC { nome: String },
+    /// O aluno é do curso de mestrado "Ensino de Computação" (ProfComp) e
+    /// `nome` é seu nome completo.
+    AlunoProfComp { nome: String },
     /// O aluno é da UFRJ, mas de outro curso. `nome` é seu nome completo e
     /// `curso` é o nome de seu curso.
     AlunoOutroCurso { nome: String, curso: String },
@@ -137,14 +140,16 @@ pub async fn consulta(
         return Err(ConsultaErro::NumeroEstranhoDeItens);
     }
 
-    if consulta[2] == "Ciência da Computação" {
-        Ok(Consulta::AlunoDoCurso {
+    match consulta[2].as_str() {
+        "Ciência da Computação" => Ok(Consulta::AlunoBCC {
             nome: consulta[0].clone(),
-        })
-    } else {
-        Ok(Consulta::AlunoOutroCurso {
+        }),
+        "Ensino de Computação" => Ok(Consulta::AlunoProfComp {
+            nome: consulta[0].clone(),
+        }),
+        _ => Ok(Consulta::AlunoOutroCurso {
             nome: consulta[0].clone(),
             curso: consulta[2].clone(),
-        })
+        }),
     }
 }
