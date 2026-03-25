@@ -93,7 +93,9 @@ pub async fn cadastrar_usuario(
                         .into(),
                 ),
                 ("uid", [username.as_str()].into()),
-                ("mail", [format!("{username}@dcc.ufrj.br").as_str()].into()),
+                ("mail", [format!(
+                    "{}@{}.ufrj.br", username, if ou == "profcomp" { "profcomp.ic" } else { "ic" }
+                ).as_str()].into()),
                 ("uidNumber", [samba_uid.as_str()].into()),
                 ("gecos", [deunicode(&dados.nome).as_str()].into()),
                 ("cn", [dados.nome.split_whitespace().next().unwrap()].into()),
