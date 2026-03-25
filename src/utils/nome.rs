@@ -147,7 +147,7 @@ impl FromStr for Nome {
         let mut v: Vec<String> = string_sanitizada
             .split_whitespace()
             .filter(|x| !x.is_empty())
-            .filter(|x| !["de", "do", "da", "dos", "das"].contains(x))
+            .filter(|x| !["de", "do", "da", "dos", "das", "e"].contains(x))
             .map(str::to_string)
             .collect();
 
