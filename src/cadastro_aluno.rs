@@ -69,7 +69,7 @@ pub enum ErroDeCadastro {
 
     #[error("Não foi possível obter informações do SIGA")]
     ErroNaConsulta(#[from] ConsultaErro),
-    #[error("Alunos de {0} não têm direito à conta do IC")]
+    #[error("Alunos de {0} não têm direito a contas do IC")]
     AlunoOutroCurso(String),
     #[error("Seu documento de matrícula é inválido")]
     DocumentoInvalido,
