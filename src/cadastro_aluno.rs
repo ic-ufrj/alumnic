@@ -80,7 +80,8 @@ pub enum ErroDeCadastro {
     CadastroRedundante(String),
 
     #[error("O nome informado {informado:?} não é o mesmo do SIGA {siga:?}")]
-    NomesDiferentes { informado: String, siga: String },
+    // TODO: trocar informado para Nome
+    NomesDiferentes { informado: String, siga: Nome },
 }
 
 impl ErroDeCadastro {
@@ -190,7 +191,10 @@ impl DadosParaCadastro {
 
 
         // Verifica se o nome é o mesmo do SIGA
-        if self.nome.parse::<Nome>() != nome_siga.parse() {
+        
+        // TODO: remover essa porção ruim de código fazendo o self.nome já ser
+        // do tipo nome ao criar a estrutura
+        if Ok(nome_siga.clone()) != self.nome.parse() {
             Err(ErroDeCadastro::NomesDiferentes {
                 informado: self.nome.clone(),
                 siga: nome_siga,

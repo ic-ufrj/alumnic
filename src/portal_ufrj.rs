@@ -10,6 +10,8 @@ use select::predicate::{Attr, Class};
 use std::collections::HashMap;
 use thiserror::Error;
 
+use crate::utils::nome::Nome;
+
 const GET_URL: &str =
     "https://gnosys.ufrj.br/Documentos/autenticacao/regularmenteMatriculado";
 const POST_URL: &str = "https://gnosys.ufrj.br/Documentos/autenticacao.seam";
@@ -39,6 +41,11 @@ pub enum ConsultaErro {
         "número estranho de itens na resposta, pode ser uma mudança do gnosys"
     )]
     NumeroEstranhoDeItens,
+
+    /// O nome retornado pelo sistema não foi considerado um nome válido pelo
+    /// módulo responsável pela criação de nomes
+    #[error("nome inválido retornado pelo gnosys")]
+    NomeInvalido(String),
 }
 
 /// Representa o resultado de uma consulta bem-sucedida.
@@ -46,13 +53,13 @@ pub enum ConsultaErro {
 pub enum Consulta {
     /// O aluno é do curso de Ciência da Computação e `nome` é seu nome
     /// completo.
-    AlunoBCC { nome: String },
+    AlunoBCC { nome: Nome },
     /// O aluno é do curso de mestrado "Ensino de Computação" (ProfComp) e
     /// `nome` é seu nome completo.
-    AlunoProfComp { nome: String },
+    AlunoProfComp { nome: Nome },
     /// O aluno é da UFRJ, mas de outro curso. `nome` é seu nome completo e
     /// `curso` é o nome de seu curso.
-    AlunoOutroCurso { nome: String, curso: String },
+    AlunoOutroCurso { nome: Nome, curso: String },
     /// O documento não foi autenticado com sucesso.
     Desconhecido,
 }
@@ -140,15 +147,15 @@ pub async fn consulta(
         return Err(ConsultaErro::NumeroEstranhoDeItens);
     }
 
+    let nome: Nome = consulta[0]
+        .parse()
+        .map_err(|_| ConsultaErro::NomeInvalido(consulta[0].clone()))?;
+
     match consulta[2].as_str() {
-        "Ciência da Computação" => Ok(Consulta::AlunoBCC {
-            nome: consulta[0].clone(),
-        }),
-        "Ensino de Computação" => Ok(Consulta::AlunoProfComp {
-            nome: consulta[0].clone(),
-        }),
+        "Ciência da Computação" => Ok(Consulta::AlunoBCC { nome }),
+        "Ensino de Computação" => Ok(Consulta::AlunoProfComp { nome }),
         _ => Ok(Consulta::AlunoOutroCurso {
-            nome: consulta[0].clone(),
+            nome,
             curso: consulta[2].clone(),
         }),
     }
