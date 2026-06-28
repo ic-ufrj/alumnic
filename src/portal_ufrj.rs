@@ -21,7 +21,7 @@ const POST_URL: &str = "https://gnosys.ufrj.br/Documentos/autenticacao.seam";
 pub enum ConsultaErro {
     /// Um erro com a biblioteca de rede. A natureza do erro pode ser vista
     /// acessando ele diretamente. Provavelmente, é um erro de conexão.
-    #[error("houve um problema com o reqwest")]
+    #[error("houve um problema com o reqwest: {0}")]
     ErroReqwest(#[from] reqwest::Error),
 
     /// Um problema ao achar um componente do Gnosys necessário para fazer a
@@ -44,22 +44,21 @@ pub enum ConsultaErro {
 
     /// O nome retornado pelo sistema não foi considerado um nome válido pelo
     /// módulo responsável pela criação de nomes
-    #[error("nome inválido retornado pelo gnosys")]
+    #[error("nome inválido retornado pelo gnosys: {0:?}")]
     NomeInvalido(String),
 }
 
 /// Representa o resultado de uma consulta bem-sucedida.
 #[derive(Debug)]
 pub enum Consulta {
-    /// O aluno é do curso de Ciência da Computação e `nome` é seu nome
-    /// completo.
+    /// O aluno é do curso de Ciência da Computação e `nome` é seu [Nome].
     AlunoBCC { nome: Nome },
     /// O aluno é do curso de mestrado "Ensino de Computação" (ProfComp) e
-    /// `nome` é seu nome completo.
+    /// `nome` é seu [Nome].
     AlunoProfComp { nome: Nome },
     /// O aluno é da UFRJ, mas de outro curso. `nome` é seu nome completo e
     /// `curso` é o nome de seu curso.
-    AlunoOutroCurso { nome: Nome, curso: String },
+    AlunoOutroCurso { nome: String, curso: String },
     /// O documento não foi autenticado com sucesso.
     Desconhecido,
 }
@@ -155,7 +154,7 @@ pub async fn consulta(
         "Ciência da Computação" => Ok(Consulta::AlunoBCC { nome }),
         "Ensino de Computação" => Ok(Consulta::AlunoProfComp { nome }),
         _ => Ok(Consulta::AlunoOutroCurso {
-            nome,
+            nome: consulta[0].clone(),
             curso: consulta[2].clone(),
         }),
     }

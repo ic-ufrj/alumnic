@@ -67,16 +67,16 @@ pub enum ErroDeCadastro {
     #[error("A senha precisa ter entre 8 e 25 caracteres, uma letra minúscula, uma maiúscula e um dígito")]
     SenhaInvalida,
 
-    #[error("Não foi possível obter informações do SIGA")]
+    #[error("Não foi possível obter informações do SIGA: {0}")]
     ErroNaConsulta(#[from] ConsultaErro),
     #[error("Alunos de {0} não têm direito a contas do IC")]
     AlunoOutroCurso(String),
     #[error("Seu documento de matrícula é inválido")]
     DocumentoInvalido,
 
-    #[error("Houve um problema ao verificar o estado do cadastro no LDAP")]
+    #[error("Houve um problema ao verificar o estado do cadastro no LDAP: {0}")]
     ErroNoCadastro(#[from] ErroLdap),
-    #[error("O cadastro já existe, com o username {0:?}")]
+    #[error("O cadastro já existe, com o nome de usuário {0:?}")]
     CadastroRedundante(String),
 
     #[error("O nome informado {informado:?} não é o mesmo do SIGA {siga:?}")]
@@ -121,8 +121,8 @@ impl DadosParaCadastro {
     ) -> Result<(), ErroDeCadastro> {
         self.dre = processar_dre(&self.dre)
             .ok_or_else(move || ErroDeCadastro::DREInvalido(self.dre))?;
-        self.nome = processar_nome(&self.nome)
-            .ok_or_else(move || ErroDeCadastro::NomeInvalido(self.nome))?;
+        //self.nome = processar_nome(&self.nome)
+        //    .ok_or_else(move || ErroDeCadastro::NomeInvalido(self.nome))?;
         self.email = processar_email(&self.email)
             .ok_or_else(move || ErroDeCadastro::EmailInvalido(self.email))?;
         self.telefone =

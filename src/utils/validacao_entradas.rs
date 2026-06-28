@@ -3,7 +3,6 @@
 //! preenchidos e que não houve erros por parte de um usuário bem-intencionado.
 //! Também ajuda a converter informações que possuem várias representações para
 //! a representação "padrão" usada pelo SIGA e por nosso sistema de LDAP.
-use crate::utils::nome::Nome;
 use email_address::EmailAddress;
 use regex::Regex;
 use secrecy::{ExposeSecret, SecretString};
@@ -199,67 +198,6 @@ pub fn processar_codigo(codigo: &str) -> Option<String> {
             &caps[8],
         )
     })
-}
-
-/// Processa um nome, retornando sua versão com cada palavra com a primeira
-/// letra maiúscula, exceto as palavras "de", "da", "das", "do" e "dos", que
-/// ficam todas minúsculas.
-///
-/// Nomes válidos possuem no mínimo duas palavras, sem contar com "de", "da",
-/// etc. e somente possuem letras e espaços.
-///
-/// # Examples
-///
-/// ```
-/// # use alumnic::utils::validacao_entradas::processar_nome;
-/// // Nomes são capitalizados automaticamente
-/// assert_eq!(
-///     processar_nome("josé da     silva"),
-///     Some("José da Silva".to_string())
-/// );
-///
-/// // Nomes não podem ter caracteres inválidos
-/// assert_eq!(processar_nome("maria123 de souza"), None);
-///
-/// // Nomes precisam ter ao menos uma palavra ("de" não conta como palavra)
-/// assert_eq!(processar_nome("de souza"), None);
-/// ```
-pub fn processar_nome(nome: &str) -> Option<String> {
-    // Verifica se o nome é válido
-    nome.parse::<Nome>().ok()?;
-
-    Some(
-        // Primeiro, converte o nome para todo minúsculo
-        nome.to_lowercase()
-            // Separa em palavras
-            .split_whitespace()
-            .map(|x| {
-                // Mantém a palavra toda minúscula se for uma dessas
-                if ["de", "da", "do", "das", "dos"].contains(&x) {
-                    x.to_string()
-                } else {
-                    // Capitaliza a palavra, primeiro pegando o primeiro
-                    // caractere
-                    x.chars()
-                        .next()
-                        .unwrap()
-                        // Transformando ele em maiúsculo, o que retorna uma
-                        // lista de caracteres (o motivo disso é explicado na
-                        // documentação da função char::to_uppercase, da std do
-                        // Rust)
-                        .to_uppercase()
-                        // Junta esse iterador do primeiro caractere maiúsculo
-                        // com os próximos caracteres (que continuam minúsculos)
-                        .chain(x.chars().skip(1))
-                        // Transforma esse iterador de caracteres em uma String
-                        .collect::<String>()
-                }
-            })
-            // Coleta esse iterador de Strings em um vetor de Strings
-            .collect::<Vec<_>>()
-            // Junta tudo com um espaço entre as palavras
-            .join(" "),
-    )
 }
 
 /// Processar/normalizar um endereço de email.
