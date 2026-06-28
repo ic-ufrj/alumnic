@@ -5,7 +5,7 @@ use crate::ldap::utils::rodar_ldap;
 use crate::utils::nome::Nome;
 use ldap3::{Ldap, Scope, SearchEntry, ldap_escape};
 
-/// Representa as informações sobre o cadastro de um usuário no LDAP.
+/// Representa as informações sobre o cadastro de um usuário no LDAP
 #[derive(Debug)]
 pub enum Consulta {
     /// O cadastro pode ser feito com sucesso e a string representa o

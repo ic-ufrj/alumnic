@@ -10,11 +10,6 @@ use deunicode::deunicode;
 use ldap3::{Ldap, Mod, Scope, SearchEntry, dn_escape};
 use secrecy::ExposeSecret;
 
-// TODO: embora o LDAP dê erro se tiver dois alunos com o msm nome, talvez n de
-// se tiver um aluno e professor, por exemplo. Isso deve ser verificado após a
-// adição e ela deve ser cancelada caso aconteça. Isso deve ser muito raro de
-// ocorrer, pois precisaria da adição simultanea, ou seja, provavelmente nunca
-// vai acontecer. Mas é bom ter algo para esse caso.
 /// Cadastra um usuário com os dados fornecidos, a partir da configuração base
 /// fornecida.
 ///
@@ -39,7 +34,6 @@ pub async fn cadastrar_usuario(
         ou: &str,
         ldap: &mut Ldap,
     ) -> Result<(), ErroLdap> {
-        // TODO: remover coisas do samba
         let (samba_uid, samba_rid) = samba_ids(ldap).await?;
 
         let dn = format!(

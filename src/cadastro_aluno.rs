@@ -36,7 +36,7 @@ pub struct DadosParaCadastro {
     /// válidas, mas qualquer mudança nas letras não é.
     ///
     /// Para fazer essa verificação, é usado o [`Nome`], mais informações sobre
-    /// essa comparação podem ser encontrados na documentação desse tipo.
+    /// essa comparação podem ser encontradas na documentação desse tipo.
     pub nome: String,
     /// O email externo. Precisa ser um email válido.
     pub email: String,

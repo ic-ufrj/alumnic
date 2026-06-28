@@ -3,6 +3,8 @@ use crate::utils::nome::NomeErro;
 use ldap3::LdapError;
 use thiserror::Error;
 
+// TODO: deixar de centralizar os erros do módulo em uma só estrutura
+
 /// Representa um erro ao tentar cadastrar um usuário.
 #[derive(Debug, Error)]
 pub enum ErroLdap {

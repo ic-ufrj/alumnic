@@ -25,8 +25,8 @@ pub enum NomeErro {
 
 /// Representação bruta e simplificada de um nome. Letras com acentos têm seus
 /// acentos ignorados e cedilhas são substituídas por "c"s. Além disso, as
-/// palavras "de", "do", "da", "dos" e "das" são removidas. Isso é útil para
-/// gerar os uids para o LDAP e para comparar strings com nomes.
+/// palavras "de", "do", "da", "dos", "das" e "e" são removidas. Isso é útil
+/// para gerar os uids para o LDAP e para comparar strings com nomes.
 ///
 /// # Examples
 ///

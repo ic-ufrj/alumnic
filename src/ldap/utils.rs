@@ -1,6 +1,8 @@
 use crate::ldap::ErroLdap;
 use ldap3::{Ldap, LdapConnAsync};
 
+/// Inicia uma conexão com o servidor de LDAP, executa a função `f` e fecha a
+/// conexão com o servidor.
 pub async fn rodar_ldap<T, F, Fut>(
     url: &str,
     bind_dn: &str,

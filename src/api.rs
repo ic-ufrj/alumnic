@@ -21,6 +21,7 @@ async fn cadastrar(
     println!();
     println!();
 
+    // Código muito ruim
     match dados {
         Ok(Json(dados)) => {
             match dados.cadastrar(
