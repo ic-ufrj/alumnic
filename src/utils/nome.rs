@@ -21,10 +21,71 @@ pub enum NomeErro {
     CaracterEstranho,
 }
 
+/// Essa estrutura guarda um nome completo devidamente sanitizado.
+///
+/// Ao converter um [Nome] para uma [String] o resultado é o nome completo
+/// separado por espaços devidamente capitalizado. As únicas palavras que não
+/// são capitalizadas são "de", "do", "da", "dos", "das" e "e".
+///
+/// [Nome]s "aproximadamente iguais" são considerados iguais. Diferenças na
+/// acentuação e na existência ou não das palavras "de", "do", etc. são
+/// ignoradas.
+///
+/// [Nome]s só podem ser formados por letras do alfabeto latino, letras
+/// acentuadas, cedilhas e espaços.
+///
+/// # Examples
+///
+/// ```
+/// use alumnic::utils::nome::{Nome, NomeErro};
+///
+/// let nome1: Nome = "ALEXANDRE COELHO GONCALVES DA COSTA".parse().unwrap();
+/// let nome2: Nome = "Alexandre Coelho Gonçalves Da Costa".parse().unwrap();
+///
+/// // Acentos inexistentes na criação do [Nome] obviamente não podem ser
+/// // recuperados ao formatar.
+/// assert_eq!(
+///     nome1.to_string(),
+///     "Alexandre Coelho Goncalves da Costa",
+/// );
+/// assert_eq!(
+///     nome2.to_string(),
+///     "Alexandre Coelho Gonçalves da Costa",
+/// );
+///
+/// // Os dois nomes são iguais, apesar da diferença do acento.
+/// assert_eq!(nome1, nome2);
+///
+/// // Caracteres inválidos não são aceitos
+/// assert_eq!(
+///     "lajdf[q] 19293".parse::<Nome>(),
+///     Err(NomeErro::CaracterEstranho),
+/// )
+/// ```
 #[derive(Debug, Clone, Display)]
 pub struct Nome(String);
 
 impl Nome {
+    /// Essa função gera um iterador de nomes de usuários possíveis para um
+    /// determinado [Nome]. Esses nomes de usuário são formados a partir de
+    /// junções do primeiro nome com combinações de iniciais e sobrenomes.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use alumnic::utils::nome::Nome;
+    /// let nome1: Nome = "Valter Luiz da Silva".parse().unwrap();
+    ///
+    /// assert_eq!(
+    ///     nome1.usernames().collect::<Vec<String>>(),
+    ///     vec![
+    ///         "valterls",
+    ///         "valterlsilva",
+    ///         "valterluizs",
+    ///         "valterluizsilva",
+    ///     ],
+    /// );
+    /// ```
     pub fn usernames(&self) -> impl Iterator<Item = String> {
         // Essa função recebe uma máscara e retorna um username gerado a partir
         // dela. Por exemplo: mascara = [false, true, false],
@@ -47,7 +108,7 @@ impl Nome {
                 .collect()
         }
 
-        let nomes: Vec<String> = simplify_str(&self.0)
+        let nomes: Vec<String> = sem_acentos_e_minusculo(&self.0)
             .split_whitespace()
             .filter(|x| !["de", "do", "da", "dos", "das", "e"].contains(x))
             .map(str::to_string)
@@ -72,8 +133,22 @@ impl Nome {
 }
 
 impl PartialEq for Nome {
+    /// Compara se dois [Nome]s são iguais. Nessa comparação, diferenças quanto
+    /// à presença das palavras "de", "do", "da", "dos", "das" e "e" são
+    /// ignoradas. Diferenças de acentuação das letras também são ignoradas.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use alumnic::utils::nome::Nome;
+    /// assert_eq!(
+    ///     "CarlOS JosÉ DA costa".parse::<Nome>().unwrap(),
+    ///     "CARLOS JOSE COSTA".parse::<Nome>().unwrap(),
+    /// );
+    /// ```
     fn eq(&self, other: &Self) -> bool {
-        let (s, o) = (simplify_str(&self.0), simplify_str(&other.0));
+        let s = sem_acentos_e_minusculo(&self.0);
+        let o = sem_acentos_e_minusculo(&other.0);
         let a = s
             .split_whitespace()
             .filter(|x| !["de", "do", "da", "dos", "das", "e"].contains(x));
@@ -90,6 +165,26 @@ impl Eq for Nome {}
 impl FromStr for Nome {
     type Err = NomeErro;
 
+    /// Cria um [Nome] a partir de uma string. Somente letras do alfabeto
+    /// latino, com ou sem acentos, cedilhas e espaços são aceitos na string.
+    ///
+    /// # Errors
+    ///
+    /// - [NomeErro::CaracterEstranho] no caso de um carácter não aceito.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use alumnic::utils::nome::{Nome, NomeErro};
+    /// assert_eq!(
+    ///     "10923 1892381 18283".parse::<Nome>(),
+    ///     Err(NomeErro::CaracterEstranho),
+    /// );
+    /// assert_eq!(
+    ///     "dez vinte trinta".parse::<Nome>().unwrap().to_string(),
+    ///     "Dez Vinte Trinta",
+    /// );
+    /// ```
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let sem_caracteres_estranhos = s
             // Substitui os cedilha por C
@@ -124,7 +219,7 @@ impl FromStr for Nome {
     }
 }
 
-fn simplify_str(a: &str) -> String {
+fn sem_acentos_e_minusculo(a: &str) -> String {
     a
         // Substitui os cedilha por C
         .replace(['ç', 'Ç'], "C")
