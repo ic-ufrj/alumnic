@@ -10,6 +10,10 @@ use thiserror::Error;
 use unicode_normalization::UnicodeNormalization;
 use derive_more::Display;
 
+const PALAVRAS_IGNORADAS: &'static [&'static str] = &[
+    "de", "do", "da", "dos", "das", "e",
+];
+
 
 /// Um erro ao tentar converter uma string para um [Nome]. Ocorre quando o nome
 /// não é considerado válido.
@@ -97,20 +101,20 @@ impl Nome {
             let sobrenomes_expandidos =
                 mask.into_iter().enumerate().map(|(i, e)| {
                     if e {
-                        names[i + 1].clone()
+                        &names[i + 1]
                     } else {
-                        names[i + 1][0..=0].to_string()
+                        &names[i + 1][0..=0]
                     }
                 });
 
-            std::iter::once(names[0].clone())
+            std::iter::once(names[0].as_str())
                 .chain(sobrenomes_expandidos)
                 .collect()
         }
 
         let nomes: Vec<String> = sem_acentos_e_minusculo(&self.0)
             .split_whitespace()
-            .filter(|x| !["de", "do", "da", "dos", "das", "e"].contains(x))
+            .filter(|x| !PALAVRAS_IGNORADAS.contains(x))
             .map(str::to_string)
             .collect();
 
@@ -151,10 +155,10 @@ impl PartialEq for Nome {
         let o = sem_acentos_e_minusculo(&other.0);
         let a = s
             .split_whitespace()
-            .filter(|x| !["de", "do", "da", "dos", "das", "e"].contains(x));
+            .filter(|x| !PALAVRAS_IGNORADAS.contains(x));
         let b = o
             .split_whitespace()
-            .filter(|x| !["de", "do", "da", "dos", "das", "e"].contains(x));
+            .filter(|x| !PALAVRAS_IGNORADAS.contains(x));
 
         a.eq(b)
     }
@@ -203,19 +207,18 @@ impl FromStr for Nome {
             return Err(NomeErro::CaracterEstranho);
         }
 
-        let nome_limpo = s
+        let nome_formatado = s
             .split_whitespace()
             .filter(|x| !x.is_empty())
             .map(str::to_lowercase)
-            // TODO: colocar de do da dos das e em uma variável estática global
-            .map(|x| if !["de", "do", "da", "dos", "das", "e"].contains(&x.as_str()) {
-                capitalize(&x)
-            } else {
+            .map(|x| if PALAVRAS_IGNORADAS.contains(&x.as_str()) {
                 x
+            } else {
+                capitalize(&x)
             })
             .join(" ");
 
-        Ok(Self(nome_limpo))
+        Ok(Self(nome_formatado))
     }
 }
 
