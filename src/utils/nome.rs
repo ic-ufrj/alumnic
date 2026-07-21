@@ -19,8 +19,8 @@ const PALAVRAS_IGNORADAS: &'static [&'static str] = &[
 /// não é considerado válido.
 #[derive(Debug, Error, PartialEq, Eq)]
 pub enum NomeErro {
-    /// O nome tem caracteres que não são letras, com ou sem acentos, cedilhas
-    /// ou espaços.
+    /// O nome tem caracteres que não são letras, com ou sem acentos, cedilhas,
+    /// apóstrofos ou espaços.
     #[error("O nome possui caracteres desconhecidos")]
     CaracterEstranho,
 }
@@ -36,7 +36,7 @@ pub enum NomeErro {
 /// ignoradas.
 ///
 /// [Nome]s só podem ser formados por letras do alfabeto latino, letras
-/// acentuadas, cedilhas e espaços.
+/// acentuadas, cedilhas, apóstrofos e espaços.
 ///
 /// # Examples
 ///
@@ -170,7 +170,8 @@ impl FromStr for Nome {
     type Err = NomeErro;
 
     /// Cria um [Nome] a partir de uma string. Somente letras do alfabeto
-    /// latino, com ou sem acentos, cedilhas e espaços são aceitos na string.
+    /// latino, com ou sem acentos, cedilhas, apóstrofos e espaços são aceitos
+    /// na string.
     ///
     /// # Errors
     ///
@@ -193,15 +194,17 @@ impl FromStr for Nome {
         let sem_caracteres_estranhos = s
             // Substitui os cedilha por C
             .replace(['ç', 'Ç'], "C")
+            // Substitui o apóstrofo tipográfico pelo ASCII
+            .replace('’', "'")
             // Separa os acentos dos caracteres
             .nfd()
             // Remove os acentos separados, transformando Á em A, por exemplo
             .filter(char::is_ascii)
             // Agora ele faz tudo ficar minúsculo
             .map(|x| x.to_ascii_lowercase())
-            // Se existir um caractere que não seja uma letra minúscula ou
-            // um espaço, ele é um erro
-            .all(|x| x.is_ascii_lowercase() || x == ' ');
+            // Se existir um caractere que não seja uma letra minúscula, um
+            // apóstrofo ou um espaço, ele é um erro
+            .all(|x| x.is_ascii_lowercase() || x == ' ' || x == '\'');
 
         if !sem_caracteres_estranhos {
             return Err(NomeErro::CaracterEstranho);
@@ -230,17 +233,28 @@ fn sem_acentos_e_minusculo(a: &str) -> String {
         .nfd()
         // Remove os acentos separados, transformando Á em A, por exemplo
         .filter(char::is_ascii)
+        // Remove o apóstrofo
+        .filter(|x| *x != '\'')
         // Agora ele faz tudo ficar minúsculo
         .map(|x| x.to_ascii_lowercase())
         .collect()
 }
 
 fn capitalize(a: &str) -> String {
-    let mut c = a.chars();
-    match c.next() {
-        Some(fst) => fst.to_uppercase().collect::<String>() + c.as_str(),
-        None => "".to_string(),
+    let mut result = String::new();
+    let mut capitalize_next = true;
+    for c in a.chars() {
+        if capitalize_next {
+            result.extend(c.to_uppercase());
+            capitalize_next = false;
+        } else {
+            result.push(c);
+        }
+        if c == '\'' {
+            capitalize_next = true;
+        }
     }
+    result
 }
 
 #[cfg(test)]
@@ -284,6 +298,19 @@ mod tests {
                 "luizrenatommotasd",
             ],
         );
+
+        assert_eq!(
+            Nome::from_str("Luiz D'Ávila de Moraes")
+                .unwrap()
+                .usernames()
+                .collect::<Vec<String>>(),
+            vec![
+                "luizdm",
+                "luizdmoraes",
+                "luizdavilam",
+                "luizdavilamoraes",
+            ]
+        );
     }
 
     #[test]
@@ -299,6 +326,14 @@ mod tests {
         assert_ne!(
             Nome::from_str("CLAUDIO LIMA CAVALCANTE"),
             Nome::from_str("CLAUDIO L CAVALCANTE")
+        );
+        assert_eq!(
+            &Nome::from_str("Luiz D'Ávila de Moraes").unwrap().to_string(),
+            "Luiz D'Ávila de Moraes"
+        );
+        assert_eq!(
+            Nome::from_str("Luiz D'Ávila"),
+            Nome::from_str("Luiz Davila")
         );
     }
 }
