@@ -18,8 +18,6 @@ async fn cadastrar(
     dados: Result<Json<DadosParaCadastro>, JsonRejection>,
 ) -> (StatusCode, Json<ResponseBody>) {
     println!("Recebido {dados:#?}");
-    println!();
-    println!();
 
     // Código muito ruim
     match dados {
@@ -31,6 +29,7 @@ async fn cadastrar(
                 &cfg.ldap_bind_pw,
             ).await {
                 Ok(username) => {
+                    println!("Registrado usuário {username:?}");
                     (
                         StatusCode::CREATED,
                         Json(ResponseBody {
@@ -42,6 +41,7 @@ async fn cadastrar(
                     )
                 },
                 Err(err) => {
+                    println!("Erro ao registrar usuário: {err:#?}");
                     (
                         err.status(),
                         Json(ResponseBody {
@@ -53,6 +53,7 @@ async fn cadastrar(
             }
         }
         Err(rej) => {
+            println!("Erro interno da API: {rej:#?}");
             (
                 rej.status(),
                 Json(ResponseBody {
