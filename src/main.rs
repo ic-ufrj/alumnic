@@ -4,6 +4,7 @@ use alumnic::ldap::consulta::consultar_cadastro_ldap;
 use clap::{Parser, Subcommand};
 use dialoguer::{Password, theme::ColorfulTheme};
 use secrecy::SecretString;
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use std::error::Error;
 use std::sync::Arc;
 
@@ -41,6 +42,18 @@ enum Comandos {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    let appender = tracing_appender::rolling::daily("logs", "alumnic.log");
+    let (writer, _guard) = tracing_appender::non_blocking(appender);
+
+    tracing_subscriber::registry()
+        .with(
+            tracing_subscriber::fmt::layer()
+                .with_writer(writer)
+                .with_ansi(false)
+        )
+        .init();
+
+
     let cli = Cli::parse();
 
     let cfg = Configuracao::importar()?;

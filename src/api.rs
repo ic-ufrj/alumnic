@@ -5,6 +5,7 @@ use axum::extract::{Json, State, rejection::JsonRejection};
 use axum::http::StatusCode;
 use axum::routing::post;
 use serde::Serialize;
+use tracing::instrument;
 use std::sync::Arc;
 
 #[derive(Serialize)]
@@ -13,12 +14,11 @@ struct ResponseBody {
     sabar_mais: Option<String>,
 }
 
+#[instrument]
 async fn cadastrar(
     State(cfg): State<Arc<Configuracao>>,
     dados: Result<Json<DadosParaCadastro>, JsonRejection>,
 ) -> (StatusCode, Json<ResponseBody>) {
-    println!("Recebido {dados:#?}");
-
     // Código muito ruim
     match dados {
         Ok(Json(dados)) => {
@@ -29,7 +29,7 @@ async fn cadastrar(
                 &cfg.ldap_bind_pw,
             ).await {
                 Ok(username) => {
-                    println!("Registrado usuário {username:?}");
+                    tracing::info!("Registrado o usuário {username:?}");
                     (
                         StatusCode::CREATED,
                         Json(ResponseBody {
@@ -41,7 +41,7 @@ async fn cadastrar(
                     )
                 },
                 Err(err) => {
-                    println!("Erro ao registrar usuário: {err:#?}");
+                    tracing::warn!("Erro ao registrar usuário: {err:#?}");
                     (
                         err.status(),
                         Json(ResponseBody {
@@ -53,7 +53,7 @@ async fn cadastrar(
             }
         }
         Err(rej) => {
-            println!("Erro interno da API: {rej:#?}");
+            tracing::error!("Erro interno da API: {rej:#?}");
             (
                 rej.status(),
                 Json(ResponseBody {
