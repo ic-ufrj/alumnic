@@ -4,7 +4,9 @@ use alumnic::ldap::consulta::consultar_cadastro_ldap;
 use clap::{Parser, Subcommand};
 use dialoguer::{Password, theme::ColorfulTheme};
 use secrecy::SecretString;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use tracing_subscriber::{
+    layer::SubscriberExt, util::SubscriberInitExt, filter::LevelFilter
+};
 use std::error::Error;
 use std::sync::Arc;
 
@@ -46,6 +48,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let (writer, _guard) = tracing_appender::non_blocking(appender);
 
     tracing_subscriber::registry()
+        .with(LevelFilter::INFO)
         .with(
             tracing_subscriber::fmt::layer()
                 .with_writer(writer)
